@@ -1,0 +1,312 @@
+{
+  "users": [
+    {
+      "id": "user_1790245706895",
+      "fullName": "Test Rider Express",
+      "mobileNumber": "09181234567",
+      "email": "testrider@gmail.com",
+      "role": "rider",
+      "municipality": "Tandag City",
+      "barangay": "Bag-ong Lungsod",
+      "completeAddress": "Bag-ong Lungsod, Tandag City, Surigao del Sur",
+      "profilePhoto": "",
+      "createdAt": "2026-09-24T10:28:26.895Z"
+    }
+  ],
+  "sellers": [],
+  "riders": [
+    {
+      "id": "rider_1790245706895",
+      "userId": "user_1790245706895",
+      "riderName": "Test Rider Express",
+      "mobileNumber": "09181234567",
+      "email": "testrider@gmail.com",
+      "municipality": "Tandag City",
+      "barangay": "Bag-ong Lungsod",
+      "vehicleType": "Motorcycle",
+      "plateNumber": "123-SDS",
+      "licenseNumber": "SUR-LIC-PENDING",
+      "active": true,
+      "totalDeliveries": 0,
+      "totalEarnings": 0,
+      "createdAt": "2026-09-24T10:28:26.895Z"
+    }
+  ],
+  "adminAccounts": [
+    {
+      "id": "admin_1",
+      "username": "admin1",
+      "name": "Provincial Admin 1",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin1@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:23.997Z"
+    },
+    {
+      "id": "admin_2",
+      "username": "admin2",
+      "name": "Provincial Admin 2",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin2@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:24.014Z"
+    },
+    {
+      "id": "admin_3",
+      "username": "admin3",
+      "name": "Provincial Admin 3",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin3@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:24.031Z"
+    },
+    {
+      "id": "admin_4",
+      "username": "admin4",
+      "name": "Provincial Admin 4",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin4@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:24.055Z"
+    },
+    {
+      "id": "admin_5",
+      "username": "admin5",
+      "name": "Provincial Admin 5",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin5@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:24.080Z"
+    },
+    {
+      "id": "admin_6",
+      "username": "admin6",
+      "name": "Provincial Admin 6",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin6@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:24.096Z"
+    },
+    {
+      "id": "admin_7",
+      "username": "admin7",
+      "name": "Provincial Admin 7",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin7@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:24.113Z"
+    },
+    {
+      "id": "admin_8",
+      "username": "admin8",
+      "name": "Provincial Admin 8",
+      "role": "admin",
+      "mustChangePassword": false,
+      "passwordHash": "h_2018166324_7",
+      "email": "admin8@surigaodelsur.ph",
+      "lastLogin": "2026-09-24T10:28:24.130Z"
+    }
+  ],
+  "products": [],
+  "orders": [],
+  "commissionTransactions": [],
+  "chatMessages": [],
+  "reviews": [],
+  "reports": [],
+  "advertisements": [
+    {
+      "id": "ad_1",
+      "businessName": "Surigao del Sur Electric Cooperative (SURSECO II) Advisory",
+      "image": "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80",
+      "link": "#",
+      "placement": "home_banner",
+      "startDate": "2026-01-01",
+      "endDate": "2026-12-31",
+      "active": true,
+      "clicks": 142,
+      "impressions": 2150
+    },
+    {
+      "id": "ad_2",
+      "businessName": "Cantilan Bank Rural Micro-Enterprise Loan",
+      "image": "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80",
+      "link": "#",
+      "placement": "near_you",
+      "startDate": "2026-01-15",
+      "endDate": "2026-12-31",
+      "active": true,
+      "clicks": 98,
+      "impressions": 1420
+    }
+  ],
+  "announcements": [
+    {
+      "id": "ann_1",
+      "title": "Welcome to Surigao del Sur Marketplace!",
+      "content": "Mabuhay! Buy Local, Sell Local, and support our very own farmers, fishermen, and micro-enterprises across our 19 municipalities and cities.",
+      "targetAudience": "all",
+      "priority": "normal",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "ann_2",
+      "title": "3% Platform Commission Policy & Transparent Accounting",
+      "content": "Surigao del Sur Marketplace collects a standard 3% commission on completed product sales to sustain municipal operations and platform maintenance. Delivery fees are 100% exempt.",
+      "targetAudience": "sellers",
+      "priority": "normal",
+      "createdAt": "2026-01-05T00:00:00.000Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_1790245706895",
+      "userId": "admin_all",
+      "title": "New Delivery Rider Registered",
+      "message": "Test Rider Express (Motorcycle - 123-SDS) registered as a delivery partner in Tandag City.",
+      "type": "verification",
+      "read": false,
+      "createdAt": "2026-09-24T10:28:26.895Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log_1790245704130_y3pw",
+      "adminId": "admin_8",
+      "adminUsername": "admin8",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin8",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:24.130Z"
+    },
+    {
+      "id": "log_1790245704113_4l8a",
+      "adminId": "admin_7",
+      "adminUsername": "admin7",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin7",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:24.113Z"
+    },
+    {
+      "id": "log_1790245704097_9yp7",
+      "adminId": "admin_6",
+      "adminUsername": "admin6",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin6",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:24.097Z"
+    },
+    {
+      "id": "log_1790245704080_6tb6",
+      "adminId": "admin_5",
+      "adminUsername": "admin5",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin5",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:24.080Z"
+    },
+    {
+      "id": "log_1790245704055_qv1l",
+      "adminId": "admin_4",
+      "adminUsername": "admin4",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin4",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:24.055Z"
+    },
+    {
+      "id": "log_1790245704031_wuap",
+      "adminId": "admin_3",
+      "adminUsername": "admin3",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin3",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:24.031Z"
+    },
+    {
+      "id": "log_1790245704014_2s5e",
+      "adminId": "admin_2",
+      "adminUsername": "admin2",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin2",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:24.014Z"
+    },
+    {
+      "id": "log_1790245703997_q1h4",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin1",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:23.997Z"
+    },
+    {
+      "id": "log_1790245695019_z5o4",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin1",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:28:15.020Z"
+    },
+    {
+      "id": "log_init_1",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "BOOTSTRAP_SYSTEM",
+      "affectedRecord": "SYSTEM_CONFIG",
+      "details": "Initialized exactly 8 constant administrator accounts (admin1 - admin8) and platform commission policy at 3%",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "settings": {
+    "marketplaceName": "Surigao del Sur Marketplace",
+    "commissionRate": 0.03,
+    "supportedPaymentMethods": [
+      "gcash",
+      "maya",
+      "cod"
+    ],
+    "adminGcash": {
+      "linked": true,
+      "accountName": "SDS MARKETPLACE TREASURY",
+      "maskedMobile": "0917 ••• ••99"
+    },
+    "adminMaya": {
+      "linked": true,
+      "accountName": "SDS MARKETPLACE OFFICIAL",
+      "maskedMobile": "0918 ••• ••88"
+    },
+    "codEnabled": true,
+    "minOrderAmount": 50,
+    "maxOrderAmount": 100000,
+    "currency": "PHP",
+    "prohibitedCategories": [
+      "Illegal Drugs & Controlled Substances",
+      "Firearms, Weapons & Explosives",
+      "Protected Coral & Endangered Wildlife",
+      "Counterfeit & Pirated Merchandise",
+      "Prescription-Only Pharmaceuticals",
+      "Stolen Property & Unregistered Vehicles",
+      "Hazardous Chemicals & Fireworks"
+    ]
+  }
+}

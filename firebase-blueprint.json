@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered buyer or seller in Surigao del Sur",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "mobileNumber": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["buyer", "seller", "admin"] },
+        "municipality": { "type": "string" },
+        "barangay": { "type": "string" },
+        "completeAddress": { "type": "string" },
+        "profilePhoto": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["fullName", "mobileNumber", "role", "municipality", "barangay", "completeAddress"]
+    },
+    "SellerProfile": {
+      "title": "SellerProfile",
+      "description": "Verified seller storefront in Surigao del Sur",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "shopName": { "type": "string" },
+        "municipality": { "type": "string" },
+        "barangay": { "type": "string" },
+        "businessAddress": { "type": "string" },
+        "shopDescription": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "suspended"] },
+        "verified": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" }
+      },
+      "required": ["userId", "shopName", "municipality", "status"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Item listed by local seller",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "sellerShopName": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "stock": { "type": "number" },
+        "municipality": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "hidden"] },
+        "isFeatured": { "type": "boolean" }
+      },
+      "required": ["sellerId", "name", "category", "price", "stock", "municipality"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Buyer purchase order with 3% commission breakdown",
+      "type": "object",
+      "properties": {
+        "buyerId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "productSubtotal": { "type": "number" },
+        "deliveryFee": { "type": "number" },
+        "totalPaid": { "type": "number" },
+        "commissionRate": { "type": "number" },
+        "commissionAmount": { "type": "number" },
+        "sellerNetAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["gcash", "maya", "cod"] },
+        "orderStatus": { "type": "string" }
+      },
+      "required": ["buyerId", "sellerId", "productSubtotal", "totalPaid", "commissionAmount", "sellerNetAmount", "paymentMethod"]
+    },
+    "CommissionTransaction": {
+      "title": "CommissionTransaction",
+      "description": "Immutable ledger record of marketplace commission",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string" },
+        "orderId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "productAmount": { "type": "number" },
+        "commissionAmount": { "type": "number" },
+        "sellerNetAmount": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "transactionDate": { "type": "string" }
+      },
+      "required": ["transactionId", "orderId", "commissionAmount", "sellerNetAmount"]
+    }
+  },
+  "firestore": {
+    "collections": {
+      "users": { "entity": "User" },
+      "sellers": { "entity": "SellerProfile" },
+      "products": { "entity": "Product" },
+      "orders": { "entity": "Order" },
+      "commission_transactions": { "entity": "CommissionTransaction" }
+    }
+  }
+}
