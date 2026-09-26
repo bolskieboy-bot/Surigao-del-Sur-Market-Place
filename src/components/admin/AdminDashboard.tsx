@@ -22,7 +22,14 @@ import {
   Lock,
   Layers,
   BarChart3,
-  Bike
+  Bike,
+  Image as ImageIcon,
+  Edit3,
+  Trash2,
+  Plus,
+  ExternalLink,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import {
@@ -71,8 +78,14 @@ export const AdminDashboard: React.FC = () => {
   const [commissionInputRate, setCommissionInputRate] = useState('3');
   const [newAnnouncementTitle, setNewAnnouncementTitle] = useState('');
   const [newAnnouncementContent, setNewAnnouncementContent] = useState('');
-  const [newAdBiz, setNewAdBiz] = useState('');
-  const [newAdImage, setNewAdImage] = useState('');
+  // Ads management state (Requirement 5: Admin Ads Management)
+  const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
+  const [adFormBiz, setAdFormBiz] = useState('');
+  const [adFormImage, setAdFormImage] = useState('');
+  const [adFormLink, setAdFormLink] = useState('');
+  const [adFormPlacement, setAdFormPlacement] = useState<'home_banner' | 'category_top' | 'near_you'>('home_banner');
+  const [adFormActive, setAdFormActive] = useState(true);
+  const [isCreatingAd, setIsCreatingAd] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const fetchAllAdminData = () => {
@@ -127,6 +140,108 @@ export const AdminDashboard: React.FC = () => {
       fetchAllAdminData();
     } catch {
       showToast('Failed to update seller verification.');
+    }
+  };
+
+  // Rider verification actions (Requirement 1: Rider Registration Approval)
+  const handleVerifyRider = async (riderId: string, status: 'approved' | 'rejected') => {
+    try {
+      await api.updateRiderStatus(riderId, status, undefined, currentAdmin.username);
+      setRiders((prev) =>
+        prev.map((r) =>
+          r.id === riderId
+            ? { ...r, status, verified: status === 'approved', active: status === 'approved' }
+            : r
+        )
+      );
+      showToast(`Rider partner status updated to: ${status.toUpperCase()}`);
+      fetchAllAdminData();
+    } catch {
+      showToast('Failed to update rider verification status.');
+    }
+  };
+
+  // Ads management actions (Requirement 5: Admin Ads Management)
+  const handleOpenEditAd = (ad: Advertisement) => {
+    setEditingAd(ad);
+    setAdFormBiz(ad.businessName);
+    setAdFormImage(ad.image);
+    setAdFormLink(ad.link);
+    setAdFormPlacement(ad.placement);
+    setAdFormActive(ad.active);
+  };
+
+  const handleSaveEditAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAd) return;
+    try {
+      const res = await api.updateAdvertisement(editingAd.id, {
+        businessName: adFormBiz.trim(),
+        image: adFormImage.trim(),
+        link: adFormLink.trim(),
+        placement: adFormPlacement,
+        active: adFormActive,
+        adminUsername: currentAdmin.username
+      });
+      setAds((prev) => prev.map((a) => (a.id === editingAd.id ? res.advertisement : a)));
+      setEditingAd(null);
+      showToast('Advertisement in Ads Corner updated successfully!');
+      fetchAllAdminData();
+    } catch {
+      showToast('Failed to update advertisement.');
+    }
+  };
+
+  const handleToggleAdActive = async (ad: Advertisement) => {
+    try {
+      const newStatus = !ad.active;
+      const res = await api.updateAdvertisement(ad.id, {
+        active: newStatus,
+        adminUsername: currentAdmin.username
+      });
+      setAds((prev) => prev.map((a) => (a.id === ad.id ? res.advertisement : a)));
+      showToast(`Ad "${ad.businessName}" ${newStatus ? 'is now POSTED in Ads Corner' : 'is now HIDDEN from Ads Corner'}.`);
+      fetchAllAdminData();
+    } catch {
+      showToast('Failed to toggle ad status.');
+    }
+  };
+
+  const handleDeleteAd = async (adId: string) => {
+    try {
+      await api.deleteAdvertisement(adId, currentAdmin.username);
+      setAds((prev) => prev.filter((a) => a.id !== adId));
+      showToast('Advertisement removed from Ads Corner.');
+      fetchAllAdminData();
+    } catch {
+      showToast('Failed to delete advertisement.');
+    }
+  };
+
+  const handleCreateNewAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adFormBiz.trim() || !adFormImage.trim()) {
+      showToast('Please provide business sponsor name and image banner URL.');
+      return;
+    }
+    try {
+      const res = await api.createAdvertisement({
+        businessName: adFormBiz.trim(),
+        image: adFormImage.trim(),
+        link: adFormLink.trim() || '#',
+        placement: adFormPlacement,
+        active: adFormActive,
+        adminUsername: currentAdmin.username
+      });
+      setAds((prev) => [res.advertisement, ...prev]);
+      setIsCreatingAd(false);
+      setAdFormBiz('');
+      setAdFormImage('');
+      setAdFormLink('');
+      showToast('New advertisement created and published to Ads Corner!');
+      fetchAllAdminData();
+    } catch {
+      showToast('Failed to create advertisement.');
     }
   };
 
@@ -245,9 +360,10 @@ export const AdminDashboard: React.FC = () => {
           { key: 'commission', label: '3% Commission & Revenue', icon: DollarSign },
           { key: 'municipalities', label: '19 LGUs Analytics', icon: MapPin },
           { key: 'sellers', label: `Sellers (${sellers.filter((s) => s.status === 'pending').length} Pending)`, icon: Store },
-          { key: 'riders', label: `Riders (${riders.length})`, icon: Bike },
+          { key: 'riders', label: `Riders (${riders.filter((r) => r.status === 'pending').length} Pending)`, icon: Bike },
           { key: 'products', label: 'Product Moderation', icon: Package },
           { key: 'orders', label: 'All Orders & Payments', icon: ShoppingBag },
+          { key: 'ads', label: `Ads Corner (${ads.length})`, icon: ImageIcon },
           { key: 'reports', label: `Reports (${reports.filter((r) => r.status === 'new' || r.status === 'under_review').length})`, icon: Flag },
           { key: 'announcements', label: 'Announcements', icon: Megaphone },
           { key: 'audit_logs', label: 'Audit Logs', icon: FileText },
@@ -277,22 +393,22 @@ export const AdminDashboard: React.FC = () => {
       {/* ======================================= */}
       {adminTab === 'dashboard' && overview && (
         <div className="space-y-6">
-          {/* Key Metric Cards */}
+          {/* Key Metric Cards (Requirement 6: Sales and Commission Separation) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">3% Platform Commission Earned</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Admin Total Sales (Commissions Earned)</span>
               <span className="text-2xl font-black text-rose-700 mt-1 block">
                 ₱{(overview.totalCommissionRevenue ?? overview.platformRevenue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-[10px] text-slate-500 mt-1 block">Exempt from delivery fees</span>
+              <span className="text-[10px] text-slate-500 mt-1 block">Admin sales consists only of commissions earned from sellers</span>
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Completed Gross Sales</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Gross Seller Merchant Sales</span>
               <span className="text-2xl font-black text-slate-900 mt-1 block">
                 ₱{(overview.totalGrossSales ?? overview.grossMarketplaceSales ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-[10px] text-slate-500 mt-1 block">{(overview.completedOrdersCount ?? overview.completedOrders ?? 0)} successful orders</span>
+              <span className="text-[10px] text-slate-500 mt-1 block">Recorded as sellers' own merchandise income</span>
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs">
@@ -746,8 +862,9 @@ export const AdminDashboard: React.FC = () => {
                     <th className="py-3 px-4">Home Municipality</th>
                     <th className="py-3 px-4">Vehicle & Plate</th>
                     <th className="py-3 px-4 text-center">Deliveries Done</th>
-                    <th className="py-3 px-4 text-right">Delivery Earnings</th>
-                    <th className="py-3 px-4 text-center">Partner Status</th>
+                    <th className="py-3 px-4 text-right">Rider's Own Delivery Sales</th>
+                    <th className="py-3 px-4 text-center">Verification Status</th>
+                    <th className="py-3 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -772,12 +889,44 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-right font-black text-emerald-700">
                         ₱{(r.totalEarnings || 0).toLocaleString()}
-                        <span className="text-[9px] text-slate-400 font-normal block">0% fee deduction</span>
+                        <span className="text-[9px] text-slate-400 font-normal block">0% fee deduction (100% rider)</span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                          Verified Rider
-                        </span>
+                        {r.status === 'pending' ? (
+                          <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full inline-block">
+                            Pending Verification
+                          </span>
+                        ) : r.status === 'approved' ? (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full inline-block">
+                            Approved Partner ✓
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full inline-block">
+                            Rejected
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center space-x-1.5">
+                          {r.status !== 'approved' && (
+                            <button
+                              onClick={() => handleVerifyRider(r.id, 'approved')}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] shadow-xs transition-colors flex items-center space-x-1"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Approve</span>
+                            </button>
+                          )}
+                          {r.status !== 'rejected' && (
+                            <button
+                              onClick={() => handleVerifyRider(r.id, 'rejected')}
+                              className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] shadow-xs transition-colors flex items-center space-x-1"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              <span>Reject</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -949,6 +1098,424 @@ export const AdminDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================= */}
+      {/* VIEW: ADS CORNER & PROMOTIONS (REQUIREMENT 5) */}
+      {/* ======================================= */}
+      {adminTab === 'ads' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 flex items-center space-x-2">
+                <ImageIcon className="w-5 h-5 text-rose-700" />
+                <span>Ads Corner & Promotional Banner Management</span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Edit and manage which advertisements can be posted in the Ads Corner across Surigao del Sur
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setEditingAd(null);
+                setIsCreatingAd(!isCreatingAd);
+              }}
+              className="bg-rose-700 hover:bg-rose-800 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition-all flex items-center space-x-1.5 self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isCreatingAd ? 'Close Form' : 'Add New Ad Banner'}</span>
+            </button>
+          </div>
+
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200">
+              <span className="text-[11px] font-bold text-slate-500 uppercase block">Total Advertisements</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{ads.length}</span>
+              <span className="text-[10px] text-slate-500">Configured promotional campaigns</span>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200">
+              <span className="text-[11px] font-bold text-slate-500 uppercase block">Posted in Ads Corner</span>
+              <span className="text-2xl font-black text-emerald-700 mt-1 block">
+                {ads.filter((a) => a.active).length}
+              </span>
+              <span className="text-[10px] text-emerald-600 font-semibold">Active & visible to marketplace buyers</span>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200">
+              <span className="text-[11px] font-bold text-slate-500 uppercase block">Hidden / Inactive</span>
+              <span className="text-2xl font-black text-amber-700 mt-1 block">
+                {ads.filter((a) => !a.active).length}
+              </span>
+              <span className="text-[10px] text-slate-400">Offline / Awaiting scheduling</span>
+            </div>
+          </div>
+
+          {/* EDIT AD MODAL / PANEL */}
+          {editingAd && (
+            <div className="bg-rose-50/60 border-2 border-rose-300 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-rose-200">
+                <div className="flex items-center space-x-2">
+                  <Edit3 className="w-5 h-5 text-rose-700" />
+                  <h3 className="font-black text-base text-slate-900">
+                    Edit Advertisement: <span className="text-rose-800">{editingAd.businessName}</span>
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingAd(null)}
+                  className="text-slate-400 hover:text-slate-600 text-xs font-bold px-2.5 py-1 rounded-lg hover:bg-white"
+                >
+                  ✕ Cancel
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEditAd} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-800 mb-1">Business Sponsor Name *</label>
+                    <input
+                      type="text"
+                      value={adFormBiz}
+                      onChange={(e) => setAdFormBiz(e.target.value)}
+                      required
+                      placeholder="e.g. Bislig Bay Resort & Eco-Tours"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden font-semibold focus:border-rose-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-800 mb-1">Target Clickthrough Link</label>
+                    <input
+                      type="text"
+                      value={adFormLink}
+                      onChange={(e) => setAdFormLink(e.target.value)}
+                      placeholder="e.g. https://facebook.com/bisligresort or #"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden focus:border-rose-600 font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-800 mb-1">Banner Image URL *</label>
+                    <input
+                      type="url"
+                      value={adFormImage}
+                      onChange={(e) => setAdFormImage(e.target.value)}
+                      required
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden focus:border-rose-600 font-mono text-[11px]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-800 mb-1">Placement Location</label>
+                    <select
+                      value={adFormPlacement}
+                      onChange={(e) => setAdFormPlacement(e.target.value as any)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden focus:border-rose-600 font-semibold"
+                    >
+                      <option value="home_banner">Ads Corner (Homepage Main Banner)</option>
+                      <option value="category_top">Category Header Showcase</option>
+                      <option value="near_you">Near You Municipality Feature</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Banner Preview */}
+                {adFormImage && (
+                  <div>
+                    <span className="block font-bold text-slate-700 mb-1.5">Live Preview:</span>
+                    <div className="rounded-2xl overflow-hidden border border-slate-300 h-28 sm:h-36 relative bg-slate-900">
+                      <img
+                        src={adFormImage}
+                        alt="Preview"
+                        className="w-full h-full object-cover opacity-90"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-950/80 to-transparent flex items-center p-4 text-white">
+                        <div>
+                          <span className="text-[9px] bg-amber-400 text-blue-950 font-black px-2 py-0.5 rounded-sm uppercase">
+                            Ads Corner Partner
+                          </span>
+                          <h4 className="font-extrabold text-sm sm:text-base mt-1 text-white">
+                            {adFormBiz || 'Business Sponsor Name'}
+                          </h4>
+                          <span className="text-[10px] text-slate-200 block">
+                            Placement: {adFormPlacement}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Toggle in Edit */}
+                <div className="flex items-center space-x-3 bg-white p-3.5 rounded-2xl border border-slate-200">
+                  <input
+                    type="checkbox"
+                    id="editAdActive"
+                    checked={adFormActive}
+                    onChange={(e) => setAdFormActive(e.target.checked)}
+                    className="w-4 h-4 text-rose-600 rounded-sm border-slate-300 focus:ring-rose-500"
+                  />
+                  <label htmlFor="editAdActive" className="text-slate-800 font-semibold cursor-pointer">
+                    <strong>Post in Ads Corner:</strong> Make this advertisement actively visible to buyers in the Ads Corner
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingAd(null)}
+                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-rose-700 hover:bg-rose-800 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-md transition-colors flex items-center space-x-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Save Advertisement Changes</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* CREATE NEW AD FORM */}
+          {isCreatingAd && !editingAd && (
+            <div className="bg-white rounded-3xl border-2 border-rose-300 p-5 sm:p-6 shadow-md space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="font-black text-base text-slate-900 flex items-center space-x-2">
+                  <Plus className="w-5 h-5 text-rose-700" />
+                  <span>Create & Post New Advertisement in Ads Corner</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingAd(false)}
+                  className="text-slate-400 hover:text-slate-600 text-xs font-bold px-2 py-1 rounded-lg"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateNewAd} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Business Sponsor Name *</label>
+                    <input
+                      type="text"
+                      value={adFormBiz}
+                      onChange={(e) => setAdFormBiz(e.target.value)}
+                      required
+                      placeholder="e.g. Hinatuan Enchanted River Tours"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden font-semibold focus:bg-white focus:border-rose-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Target Clickthrough Link</label>
+                    <input
+                      type="text"
+                      value={adFormLink}
+                      onChange={(e) => setAdFormLink(e.target.value)}
+                      placeholder="e.g. https://facebook.com/sponsor or #"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden focus:bg-white focus:border-rose-600 font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Banner Image URL *</label>
+                    <input
+                      type="url"
+                      value={adFormImage}
+                      onChange={(e) => setAdFormImage(e.target.value)}
+                      required
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden focus:bg-white focus:border-rose-600 font-mono text-[11px]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Placement Location</label>
+                    <select
+                      value={adFormPlacement}
+                      onChange={(e) => setAdFormPlacement(e.target.value as any)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 outline-hidden focus:bg-white focus:border-rose-600 font-semibold"
+                    >
+                      <option value="home_banner">Ads Corner (Homepage Main Banner)</option>
+                      <option value="category_top">Category Header Showcase</option>
+                      <option value="near_you">Near You Municipality Feature</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <input
+                    type="checkbox"
+                    id="newAdActive"
+                    checked={adFormActive}
+                    onChange={(e) => setAdFormActive(e.target.checked)}
+                    className="w-4 h-4 text-rose-600 rounded-sm border-slate-300 focus:ring-rose-500"
+                  />
+                  <label htmlFor="newAdActive" className="text-slate-800 font-semibold cursor-pointer">
+                    <strong>Post in Ads Corner immediately:</strong> Check to activate and display in the Ads Corner right away
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingAd(false)}
+                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-rose-700 hover:bg-rose-800 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-md transition-colors flex items-center space-x-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create & Post Advertisement</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ADS LIST & MANAGEMENT TABLE/GRID */}
+          <div className="space-y-4">
+            <h3 className="font-extrabold text-sm text-slate-800">
+              Manage Ads Corner Postings ({ads.length} Total)
+            </h3>
+
+            {ads.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center text-xs text-slate-400">
+                No advertisements created yet. Click "Add New Ad Banner" above to post an advertisement in the Ads Corner.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {ads.map((ad, idx) => (
+                  <div
+                    key={ad.id || `ad-${idx}`}
+                    className={`bg-white rounded-3xl border ${
+                      ad.active ? 'border-emerald-200 shadow-sm' : 'border-slate-200 opacity-75'
+                    } overflow-hidden flex flex-col justify-between`}
+                  >
+                    {/* Image Banner */}
+                    <div className="h-36 bg-slate-900 relative overflow-hidden group">
+                      <img
+                        src={ad.image}
+                        alt={ad.businessName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80';
+                        }}
+                      />
+                      <div className="absolute top-2.5 left-2.5 flex items-center space-x-1.5">
+                        {ad.active ? (
+                          <span className="bg-emerald-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs flex items-center space-x-1">
+                            <Eye className="w-3 h-3" />
+                            <span>POSTED IN ADS CORNER</span>
+                          </span>
+                        ) : (
+                          <span className="bg-slate-700 text-slate-200 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs flex items-center space-x-1">
+                            <EyeOff className="w-3 h-3" />
+                            <span>HIDDEN</span>
+                          </span>
+                        )}
+                        <span className="bg-blue-950/80 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {ad.placement}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Ad Details */}
+                    <div className="p-4 space-y-3 flex-1 flex flex-col justify-between text-xs">
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-extrabold text-sm text-slate-900">{ad.businessName}</h4>
+                          <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                            {ad.startDate || 'Provincial Ad'}
+                          </span>
+                        </div>
+                        {ad.link && ad.link !== '#' && (
+                          <a
+                            href={ad.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-700 hover:text-blue-900 font-mono text-[11px] flex items-center space-x-1 mt-1 truncate"
+                          >
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{ad.link}</span>
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Management Controls: Edit, Toggle Active, Delete */}
+                      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center space-x-1.5">
+                          {/* EDIT AD BUTTON */}
+                          <button
+                            onClick={() => handleOpenEditAd(ad)}
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold px-3 py-1.5 rounded-xl text-xs transition-colors flex items-center space-x-1 border border-blue-200"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit Ad</span>
+                          </button>
+
+                          {/* TOGGLE ACTIVE / INACTIVE */}
+                          <button
+                            onClick={() => handleToggleAdActive(ad)}
+                            className={`font-bold px-3 py-1.5 rounded-xl text-xs transition-colors flex items-center space-x-1 border ${
+                              ad.active
+                                ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+                            }`}
+                          >
+                            {ad.active ? (
+                              <>
+                                <EyeOff className="w-3.5 h-3.5" />
+                                <span>Hide from Ads</span>
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Post in Ads</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* DELETE AD */}
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to remove the advertisement for "${ad.businessName}"?`)) {
+                              handleDeleteAd(ad.id);
+                            }
+                          }}
+                          className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-1.5 rounded-lg transition-colors"
+                          title="Delete advertisement"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -101,6 +101,8 @@ export interface RiderProfile {
   vehicleType: string;
   plateNumber: string;
   licenseNumber: string;
+  status: 'pending' | 'approved' | 'rejected';
+  verified?: boolean;
   active: boolean;
   totalDeliveries: number;
   totalEarnings: number; // 100% of delivery fee - no fee charged to rider

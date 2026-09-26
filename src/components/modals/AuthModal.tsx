@@ -285,6 +285,16 @@ export const AuthModal: React.FC = () => {
       }
 
       if (res.rider) {
+        if (res.rider.status === 'pending') {
+          setError('Rider verification pending: Your rider registration must be approved by the admin first for verification before you can proceed.');
+          setLoading(false);
+          return;
+        }
+        if (res.rider.status === 'rejected') {
+          setError('Your rider registration application was not approved by the administrator.');
+          setLoading(false);
+          return;
+        }
         setCurrentRider(res.rider);
         setCurrentUser(res.user);
         setRole('rider');
@@ -333,10 +343,27 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  // Preserved Buyer Registration
+  // Preserved Buyer Registration (Requirement 3: Registration Requirements Notification)
   const handleRegisterBuyer = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const missing: string[] = [];
+    if (!bUsername.trim()) missing.push('Username');
+    if (!bPassword.trim()) missing.push('Password');
+    if (!bFullName.trim()) missing.push('Full Name');
+    if (!bMobile.trim()) missing.push('Mobile Number');
+    if (!bMunicipality || bMunicipality === 'All') missing.push('Municipality/City');
+    if (!bBarangay.trim()) missing.push('Barangay');
+    if (!bAddress.trim()) missing.push('Complete Delivery Address');
+
+    if (missing.length > 0) {
+      const msg = `Incomplete Registration Requirements: Please fulfill ${missing.join(', ')}.`;
+      setError(msg);
+      showToast(msg);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -365,10 +392,30 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  // Preserved Seller Registration
+  // Preserved Seller Registration (Requirement 3: Registration Requirements Notification)
   const handleRegisterSeller = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const missing: string[] = [];
+    if (!sUsername.trim()) missing.push('Username');
+    if (!sPassword.trim()) missing.push('Password');
+    if (!sOwnerName.trim()) missing.push('Owner Full Name');
+    if (!sShopName.trim()) missing.push('Shop/Business Name');
+    if (!sMobile.trim()) missing.push('Mobile Number');
+    if (!sMunicipality || sMunicipality === 'All') missing.push('Municipality/City');
+    if (!sBarangay.trim()) missing.push('Barangay');
+    if (!sBusinessAddress.trim()) missing.push('Complete Business Address');
+    if (!sIdDocument.trim()) missing.push('Valid Government ID Document');
+    if (!sBusinessPermit.trim()) missing.push('Barangay Clearance or Business Permit');
+
+    if (missing.length > 0) {
+      const msg = `Incomplete Seller Requirements: Please fulfill ${missing.join(', ')}.`;
+      setError(msg);
+      showToast(msg);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -393,7 +440,7 @@ export const AuthModal: React.FC = () => {
         setCurrentSeller(res.seller);
         setRole('seller');
         setAuthModalOpen(false);
-        showToast('Seller application submitted! Status is PENDING APPROVAL by provincial admin.');
+        showToast('Seller application submitted! Status is PENDING APPROVAL by provincial admin before you can post listings.');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to submit seller application.');
@@ -402,10 +449,29 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  // Delivery Rider Registration
+  // Delivery Rider Registration (Requirement 1: Rider Registration Approval & Requirement 3: Notification)
   const handleRegisterRider = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const missing: string[] = [];
+    if (!rUsername.trim()) missing.push('Username');
+    if (!rPassword.trim()) missing.push('Password');
+    if (!rRiderName.trim()) missing.push('Rider Full Name');
+    if (!rMobile.trim()) missing.push('Mobile Number');
+    if (!rMunicipality || rMunicipality === 'All') missing.push('Operating Municipality');
+    if (!rBarangay.trim()) missing.push('Barangay');
+    if (!rVehicleType.trim()) missing.push('Vehicle Type');
+    if (!rPlateNumber.trim()) missing.push('Plate Number / MV File No.');
+    if (!rLicenseNumber.trim()) missing.push("Driver's License Number");
+
+    if (missing.length > 0) {
+      const msg = `Incomplete Rider Requirements: Please fulfill ${missing.join(', ')}.`;
+      setError(msg);
+      showToast(msg);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -423,12 +489,9 @@ export const AuthModal: React.FC = () => {
         profilePhoto: rPhoto
       });
 
-      if (res.user && res.rider) {
-        setCurrentUser(res.user);
-        setCurrentRider(res.rider);
-        setRole('rider');
+      if (res.rider) {
         setAuthModalOpen(false);
-        showToast('Delivery rider partner registered successfully! Welcome to the team.');
+        showToast('Rider registration submitted! Your account must be approved by the admin first for verification before you can proceed.');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to submit rider registration.');

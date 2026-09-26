@@ -381,6 +381,8 @@ function getInitialDB(): MarketplaceDB {
       vehicleType: 'Honda Wave 110 (Motorcycle)',
       plateNumber: 'SDS-4821',
       licenseNumber: 'L02-20-019842',
+      status: 'approved',
+      verified: true,
       active: true,
       totalDeliveries: 19,
       totalEarnings: 2750,
@@ -397,6 +399,8 @@ function getInitialDB(): MarketplaceDB {
       vehicleType: 'Yamaha Sight 115 (Motorcycle)',
       plateNumber: 'SDS-9912',
       licenseNumber: 'L02-19-034112',
+      status: 'approved',
+      verified: true,
       active: true,
       totalDeliveries: 24,
       totalEarnings: 3480,
@@ -413,6 +417,8 @@ function getInitialDB(): MarketplaceDB {
       vehicleType: 'Suzuki Smash 115 (Motorcycle)',
       plateNumber: 'SDS-3381',
       licenseNumber: 'L02-21-049811',
+      status: 'approved',
+      verified: true,
       active: true,
       totalDeliveries: 15,
       totalEarnings: 2190,
@@ -1016,25 +1022,29 @@ function loadDatabase(): MarketplaceDB {
       parsed.users = (parsed.users || []).filter(
         (u: any) =>
           !demoEmails.includes(u.email?.toLowerCase()) &&
-          !u.id.startsWith('user_demo') &&
-          !u.id.startsWith('user_rider_') &&
-          !u.id.startsWith('user_seller_') &&
-          !u.id.startsWith('user_buyer_')
+          !u.id.startsWith('user_demo')
       );
       parsed.sellers = (parsed.sellers || []).filter(
         (s: any) =>
           !demoEmails.includes(s.email?.toLowerCase()) &&
-          !s.id.startsWith('seller_')
+          !s.id.startsWith('seller_demo')
       );
-      parsed.riders = (parsed.riders || []).filter(
-        (r: any) =>
-          !demoEmails.includes(r.email?.toLowerCase()) &&
-          !r.id.startsWith('rider_')
-      );
-      parsed.products = (parsed.products || []).filter((p: any) => !p.id.startsWith('prod_'));
-      parsed.orders = (parsed.orders || []).filter((o: any) => !o.id.startsWith('ord_'));
-      parsed.commissionTransactions = (parsed.commissionTransactions || []).filter((c: any) => !c.id.startsWith('comm_'));
-      parsed.reviews = (parsed.reviews || []).filter((r: any) => !r.id.startsWith('rev_'));
+      parsed.riders = (parsed.riders || [])
+        .filter(
+          (r: any) =>
+            !demoEmails.includes(r.email?.toLowerCase()) &&
+            !r.id.startsWith('rider_demo')
+        )
+        .map((r: any) => ({
+          ...r,
+          status: r.status || 'pending',
+          verified: r.status === 'approved' ? true : (r.verified ?? false),
+          active: r.status === 'approved' ? true : (r.active ?? false)
+        }));
+      parsed.products = parsed.products || [];
+      parsed.orders = parsed.orders || [];
+      parsed.commissionTransactions = parsed.commissionTransactions || [];
+      parsed.reviews = parsed.reviews || [];
       parsed.adminAccounts = FIXED_ADMIN_ACCOUNTS;
       if (!parsed.settings) parsed.settings = getInitialDB().settings;
       saveDatabase(parsed);
@@ -1313,6 +1323,18 @@ async function startServer() {
       }
     }
 
+    if (rider.status === 'pending') {
+      return res.status(403).json({
+        error: 'Rider registration is currently pending admin verification and approval. Please wait for the administrator to approve your account before proceeding.'
+      });
+    }
+
+    if (rider.status === 'rejected') {
+      return res.status(403).json({
+        error: 'Your rider registration application was not approved by the administrator.'
+      });
+    }
+
     return res.json({
       rider,
       user
@@ -1418,6 +1440,16 @@ async function startServer() {
       sellerProfile = db.sellers.find((s) => s.userId === user.id);
     } else if (user.role === 'rider') {
       riderProfile = db.riders.find((r) => r.userId === user.id || r.email.toLowerCase() === user.email.toLowerCase());
+      if (riderProfile?.status === 'pending') {
+        return res.status(403).json({
+          error: 'Rider registration is currently pending admin verification and approval. Please wait for the administrator to approve your account before proceeding.'
+        });
+      }
+      if (riderProfile?.status === 'rejected') {
+        return res.status(403).json({
+          error: 'Your rider registration application was not approved by the administrator.'
+        });
+      }
     }
 
     return res.json({
@@ -1431,8 +1463,19 @@ async function startServer() {
   app.post('/api/auth/register-buyer', (req: Request, res: Response) => {
     const { username, password, fullName, mobileNumber, email, municipality, barangay, completeAddress, profilePhoto } = req.body;
 
-    if (!fullName || !mobileNumber || !municipality || !barangay || !completeAddress) {
-      return res.status(400).json({ error: 'Please provide all required registration fields.' });
+    const missingRequirements: string[] = [];
+    if (!username || !String(username).trim()) missingRequirements.push('Username');
+    if (!password || !String(password).trim()) missingRequirements.push('Password');
+    if (!fullName || !String(fullName).trim()) missingRequirements.push('Full Name');
+    if (!mobileNumber || !String(mobileNumber).trim()) missingRequirements.push('Mobile Number');
+    if (!municipality || !String(municipality).trim()) missingRequirements.push('Municipality/City');
+    if (!barangay || !String(barangay).trim()) missingRequirements.push('Barangay');
+    if (!completeAddress || !String(completeAddress).trim()) missingRequirements.push('Complete Delivery Address');
+
+    if (missingRequirements.length > 0) {
+      return res.status(400).json({
+        error: `Incomplete registration requirements. Please provide: ${missingRequirements.join(', ')}.`
+      });
     }
 
     // Verify municipality is strictly within Surigao del Sur
@@ -1441,12 +1484,10 @@ async function startServer() {
       return res.status(400).json({ error: 'Registration is strictly limited to municipalities and cities of Surigao del Sur.' });
     }
 
-    const cleanUsername = username ? String(username).trim().toLowerCase() : '';
-    if (cleanUsername) {
-      const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
-      if (uExists) {
-        return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
-      }
+    const cleanUsername = String(username).trim().toLowerCase();
+    const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
+    if (uExists) {
+      return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
     }
 
     const existing = db.users.find((u) => u.mobileNumber === mobileNumber.trim() || (email && u.email.toLowerCase() === email.trim().toLowerCase()));
@@ -1454,13 +1495,13 @@ async function startServer() {
       return res.status(409).json({ error: 'An account with this mobile number or email already exists.' });
     }
 
-    const cleanPass = password ? String(password).trim() : undefined;
+    const cleanPass = String(password).trim();
 
     const newUser: User = {
       id: `user_${Date.now()}`,
-      username: cleanUsername || undefined,
+      username: cleanUsername,
       password: cleanPass,
-      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
+      passwordHash: hashPassword(cleanPass),
       fullName: fullName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@buyer.sds`,
@@ -1500,8 +1541,22 @@ async function startServer() {
       businessPermitUrl
     } = req.body;
 
-    if (!ownerName || !shopName || !mobileNumber || !municipality || !barangay || !businessAddress) {
-      return res.status(400).json({ error: 'All primary seller registration fields are required.' });
+    const missingRequirements: string[] = [];
+    if (!username || !String(username).trim()) missingRequirements.push('Username');
+    if (!password || !String(password).trim()) missingRequirements.push('Password');
+    if (!ownerName || !String(ownerName).trim()) missingRequirements.push('Owner Full Name');
+    if (!shopName || !String(shopName).trim()) missingRequirements.push('Shop/Business Name');
+    if (!mobileNumber || !String(mobileNumber).trim()) missingRequirements.push('Mobile Number');
+    if (!municipality || !String(municipality).trim()) missingRequirements.push('Municipality/City');
+    if (!barangay || !String(barangay).trim()) missingRequirements.push('Barangay');
+    if (!businessAddress || !String(businessAddress).trim()) missingRequirements.push('Complete Business Address');
+    if (!idDocumentUrl || !String(idDocumentUrl).trim()) missingRequirements.push('Valid Government ID Document');
+    if (!businessPermitUrl || !String(businessPermitUrl).trim()) missingRequirements.push('Barangay Clearance or Business Permit');
+
+    if (missingRequirements.length > 0) {
+      return res.status(400).json({
+        error: `Incomplete registration requirements. Please fulfill: ${missingRequirements.join(', ')}.`
+      });
     }
 
     const isValidMuni = SURIGAO_DEL_SUR_MUNICIPALITIES.some((m) => m.name.toLowerCase() === municipality.trim().toLowerCase());
@@ -1509,23 +1564,21 @@ async function startServer() {
       return res.status(400).json({ error: 'Sellers must be physically located within Surigao del Sur unless specifically pre-approved.' });
     }
 
-    const cleanUsername = username ? String(username).trim().toLowerCase() : '';
-    if (cleanUsername) {
-      const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
-      if (uExists) {
-        return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
-      }
+    const cleanUsername = String(username).trim().toLowerCase();
+    const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
+    if (uExists) {
+      return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
     }
 
-    const cleanPass = password ? String(password).trim() : undefined;
+    const cleanPass = String(password).trim();
     const userId = `user_${Date.now()}`;
     const sellerId = `seller_${Date.now()}`;
 
     const newUser: User = {
       id: userId,
-      username: cleanUsername || undefined,
+      username: cleanUsername,
       password: cleanPass,
-      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
+      passwordHash: hashPassword(cleanPass),
       fullName: ownerName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@seller.sds`,
@@ -1540,9 +1593,9 @@ async function startServer() {
     const newSeller: SellerProfile = {
       id: sellerId,
       userId,
-      username: cleanUsername || undefined,
+      username: cleanUsername,
       password: cleanPass,
-      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
+      passwordHash: hashPassword(cleanPass),
       ownerName: ownerName.trim(),
       shopName: shopName.trim(),
       mobileNumber: mobileNumber.trim(),
@@ -1554,7 +1607,7 @@ async function startServer() {
       profilePhoto: profilePhoto || '',
       idDocumentUrl: idDocumentUrl || '',
       businessPermitUrl: businessPermitUrl || '',
-      status: 'pending', // PENDING APPROVAL
+      status: 'pending', // PENDING ADMIN APPROVAL (cannot post listings until approved)
       verified: false,
       rating: 0,
       reviewCount: 0,
@@ -1574,8 +1627,8 @@ async function startServer() {
     db.notifications.unshift({
       id: `notif_${Date.now()}`,
       userId: 'admin_all',
-      title: 'New Seller Application',
-      message: `${shopName} (${ownerName}) from ${municipality} submitted a seller application pending your review.`,
+      title: 'New Seller Application Pending Approval',
+      message: `${shopName} (${ownerName}) from ${municipality} submitted a seller application pending your review. Listings blocked until approved.`,
       type: 'verification',
       read: false,
       createdAt: new Date().toISOString()
@@ -1586,11 +1639,11 @@ async function startServer() {
     return res.status(201).json({
       user: newUser,
       seller: newSeller,
-      message: 'Seller application submitted! Status is PENDING APPROVAL until verified by an administrator.'
+      message: 'Seller application submitted! Status is PENDING ADMIN APPROVAL. Product listings cannot be posted until approved by an administrator.'
     });
   });
 
-  // Register Rider
+  // Register Rider (Requirement 1: Rider Registration Approval)
   app.post('/api/auth/register-rider', (req: Request, res: Response) => {
     const {
       username,
@@ -1606,8 +1659,21 @@ async function startServer() {
       profilePhoto
     } = req.body;
 
-    if (!riderName || !mobileNumber || !municipality || !barangay || !vehicleType || !plateNumber) {
-      return res.status(400).json({ error: 'Please provide all required delivery rider fields.' });
+    const missingRequirements: string[] = [];
+    if (!username || !String(username).trim()) missingRequirements.push('Username');
+    if (!password || !String(password).trim()) missingRequirements.push('Password');
+    if (!riderName || !String(riderName).trim()) missingRequirements.push('Rider Full Name');
+    if (!mobileNumber || !String(mobileNumber).trim()) missingRequirements.push('Mobile Number');
+    if (!municipality || !String(municipality).trim()) missingRequirements.push('Operating Municipality');
+    if (!barangay || !String(barangay).trim()) missingRequirements.push('Barangay');
+    if (!vehicleType || !String(vehicleType).trim()) missingRequirements.push('Vehicle Type');
+    if (!plateNumber || !String(plateNumber).trim()) missingRequirements.push('Plate Number / MV File No.');
+    if (!licenseNumber || !String(licenseNumber).trim()) missingRequirements.push("Driver's License Number");
+
+    if (missingRequirements.length > 0) {
+      return res.status(400).json({
+        error: `Incomplete registration requirements. Please fulfill: ${missingRequirements.join(', ')}.`
+      });
     }
 
     const isValidMuni = SURIGAO_DEL_SUR_MUNICIPALITIES.some((m) => m.name.toLowerCase() === municipality.trim().toLowerCase());
@@ -1615,24 +1681,22 @@ async function startServer() {
       return res.status(400).json({ error: 'Riders must operate within Surigao del Sur LGUs.' });
     }
 
-    const cleanUsername = username ? String(username).trim().toLowerCase() : '';
-    if (cleanUsername) {
-      const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
-      const rExists = db.riders.find((r) => r.username?.toLowerCase() === cleanUsername);
-      if (uExists || rExists) {
-        return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
-      }
+    const cleanUsername = String(username).trim().toLowerCase();
+    const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
+    const rExists = db.riders.find((r) => r.username?.toLowerCase() === cleanUsername);
+    if (uExists || rExists) {
+      return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
     }
 
-    const cleanPass = password ? String(password).trim() : undefined;
+    const cleanPass = String(password).trim();
     const userId = `user_${Date.now()}`;
     const riderId = `rider_${Date.now()}`;
 
     const newUser: User = {
       id: userId,
-      username: cleanUsername || undefined,
+      username: cleanUsername,
       password: cleanPass,
-      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
+      passwordHash: hashPassword(cleanPass),
       fullName: riderName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@rider.sds`,
@@ -1647,9 +1711,9 @@ async function startServer() {
     const newRider: RiderProfile = {
       id: riderId,
       userId,
-      username: cleanUsername || undefined,
+      username: cleanUsername,
       password: cleanPass,
-      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
+      passwordHash: hashPassword(cleanPass),
       riderName: riderName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@rider.sds`,
@@ -1657,8 +1721,10 @@ async function startServer() {
       barangay: barangay.trim(),
       vehicleType: vehicleType.trim(),
       plateNumber: plateNumber.trim().toUpperCase(),
-      licenseNumber: licenseNumber ? licenseNumber.trim().toUpperCase() : 'SUR-LIC-PENDING',
-      active: true,
+      licenseNumber: licenseNumber.trim().toUpperCase(),
+      status: 'pending', // PENDING ADMIN APPROVAL (Rider cannot proceed until approved)
+      verified: false,
+      active: false,
       totalDeliveries: 0,
       totalEarnings: 0,
       createdAt: new Date().toISOString()
@@ -1667,12 +1733,12 @@ async function startServer() {
     db.users.push(newUser);
     db.riders.push(newRider);
 
-    // Notify admins of new rider partner
+    // Notify admins of new rider partner awaiting verification
     db.notifications.unshift({
       id: `notif_${Date.now()}`,
       userId: 'admin_all',
-      title: 'New Delivery Rider Registered',
-      message: `${riderName} (${vehicleType} - ${plateNumber}) registered as a delivery partner in ${municipality}.`,
+      title: 'New Rider Partner Pending Verification',
+      message: `${riderName} (${vehicleType} - ${plateNumber}) registered as a delivery partner in ${municipality}. Pending admin approval before proceeding.`,
       type: 'verification',
       read: false,
       createdAt: new Date().toISOString()
@@ -1683,7 +1749,7 @@ async function startServer() {
     return res.status(201).json({
       user: newUser,
       rider: newRider,
-      message: 'Delivery rider registered successfully! 100% of delivery fee is credited directly to you.'
+      message: 'Rider registration submitted! Your account is PENDING ADMIN APPROVAL for verification before you can proceed.'
     });
   });
 
@@ -2033,6 +2099,27 @@ async function startServer() {
       return res.status(400).json({ error: 'This seller does not offer Cash on Delivery.' });
     }
 
+    // REQUIREMENT 2: AVAILABLE STOCK CONTROL
+    // Prevent purchasing quantities that exceed the available inventory
+    for (const it of items) {
+      const prod = db.products.find((p) => p.id === it.productId);
+      if (!prod) {
+        return res.status(404).json({ error: `Product "${it.name || it.productId}" not found.` });
+      }
+      const qty = Math.max(1, Number(it.quantity) || 1);
+      const availableStock = Number(prod.stock) || 0;
+      if (availableStock <= 0) {
+        return res.status(400).json({
+          error: `Item "${prod.name}" is currently out of stock.`
+        });
+      }
+      if (qty > availableStock) {
+        return res.status(400).json({
+          error: `Requested quantity for "${prod.name}" (${qty} items) exceeds seller's available stock (${availableStock} items). Please adjust your purchase quantity.`
+        });
+      }
+    }
+
     // STRICT SERVER-SIDE CALCULATION OF SUBTOTAL
     let productSubtotal = 0;
     const validatedItems = items.map((it: any) => {
@@ -2295,6 +2382,17 @@ async function startServer() {
       return res.status(400).json({ error: 'This order is scheduled for store pickup, not rider delivery.' });
     }
 
+    // Verify rider is approved by admin (Requirement 1)
+    const rider = db.riders.find((r) => r.id === riderId);
+    if (rider && rider.status === 'pending') {
+      return res.status(403).json({ error: 'Rider registration must be approved by the admin first for verification before you can proceed.' });
+    }
+
+    // Ensure delivery disappears from all other riders once claimed (Requirement 7)
+    if (order.riderId && order.riderId !== riderId) {
+      return res.status(409).json({ error: 'This delivery has already been claimed by another rider.' });
+    }
+
     order.riderId = riderId;
     order.riderName = riderName;
     order.riderMobile = riderMobile;
@@ -2415,6 +2513,51 @@ async function startServer() {
   // Get all registered riders (Admin and general partner list)
   app.get('/api/riders', (req: Request, res: Response) => {
     return res.json({ riders: db.riders });
+  });
+
+  // Admin: Update Rider Verification Status (Requirement 1: Rider Registration Approval)
+  app.post('/api/admin/riders/:id/status', (req: Request, res: Response) => {
+    const { status, notes, adminUsername } = req.body;
+    const rider = db.riders.find((r) => r.id === req.params.id);
+    if (!rider) {
+      return res.status(404).json({ error: 'Rider profile not found.' });
+    }
+
+    if (status !== 'approved' && status !== 'rejected') {
+      return res.status(400).json({ error: 'Invalid status. Must be approved or rejected.' });
+    }
+
+    rider.status = status;
+    rider.verified = status === 'approved';
+    rider.active = status === 'approved';
+
+    // Notify Rider
+    db.notifications.unshift({
+      id: `notif_${Date.now()}_r_status`,
+      userId: rider.userId,
+      title: status === 'approved' ? 'Rider Application Approved!' : 'Rider Application Verification Notice',
+      message:
+        status === 'approved'
+          ? `Congratulations ${rider.riderName}! Your delivery rider partner registration has been verified and approved by Provincial Admin. You can now log in and accept deliveries.`
+          : `Your rider registration could not be approved at this time: ${notes || 'Document requirements could not be verified'}.`,
+      type: 'verification',
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+
+    if (adminUsername) {
+      logAdminAction(
+        adminUsername,
+        'admin',
+        status === 'approved' ? 'APPROVE_RIDER' : 'REJECT_RIDER',
+        `Rider: ${rider.riderName} (${rider.plateNumber})`,
+        `Rider partner application marked as ${status.toUpperCase()}`,
+        req.ip
+      );
+    }
+
+    saveDatabase();
+    return res.json({ rider });
   });
 
   // ==========================================
@@ -2857,6 +3000,61 @@ async function startServer() {
     }
     saveDatabase();
     return res.status(201).json({ advertisement: ad });
+  });
+
+  // Edit Advertisement (Requirement 5: Admin Ads Management)
+  app.put('/api/advertisements/:id', (req: Request, res: Response) => {
+    const ad = db.advertisements.find((a) => a.id === req.params.id);
+    if (!ad) {
+      return res.status(404).json({ error: 'Advertisement not found.' });
+    }
+
+    const { businessName, image, link, placement, startDate, endDate, active, adminUsername } = req.body;
+    if (businessName !== undefined) ad.businessName = String(businessName).trim();
+    if (image !== undefined) ad.image = String(image).trim();
+    if (link !== undefined) ad.link = String(link).trim();
+    if (placement !== undefined) ad.placement = placement;
+    if (startDate !== undefined) ad.startDate = startDate;
+    if (endDate !== undefined) ad.endDate = endDate;
+    if (active !== undefined) ad.active = Boolean(active);
+
+    if (adminUsername) {
+      logAdminAction(
+        adminUsername,
+        'admin',
+        'UPDATE_AD',
+        `Ad: ${ad.businessName}`,
+        `Updated advertisement details (${ad.placement}, active: ${ad.active})`,
+        req.ip
+      );
+    }
+
+    saveDatabase();
+    return res.json({ advertisement: ad });
+  });
+
+  // Delete Advertisement
+  app.delete('/api/advertisements/:id', (req: Request, res: Response) => {
+    const index = db.advertisements.findIndex((a) => a.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Advertisement not found.' });
+    }
+
+    const [deleted] = db.advertisements.splice(index, 1);
+    const { adminUsername } = req.body || {};
+    if (adminUsername) {
+      logAdminAction(
+        adminUsername,
+        'admin',
+        'DELETE_AD',
+        `Ad: ${deleted.businessName}`,
+        `Removed advertisement from Ads Corner`,
+        req.ip
+      );
+    }
+
+    saveDatabase();
+    return res.json({ success: true, message: 'Advertisement removed successfully.' });
   });
 
   // Announcements CRUD

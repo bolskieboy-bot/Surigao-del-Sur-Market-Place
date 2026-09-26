@@ -120,6 +120,11 @@ export const SellerDashboard: React.FC = () => {
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentSeller.status !== 'approved') {
+      showToast('A newly registered seller must not be allowed to add or post listings until their account has been approved by the admin.');
+      return;
+    }
+
     if (pPhotos.length === 0) {
       showToast('Please upload at least one product photo.');
       return;
@@ -223,7 +228,13 @@ export const SellerDashboard: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setSellerTab('add_product')}
+            onClick={() => {
+              if (currentSeller.status !== 'approved') {
+                showToast('Posting listings is locked: Your seller account must be approved by the admin first.');
+                return;
+              }
+              setSellerTab('add_product');
+            }}
             className="bg-white hover:bg-amber-50 text-amber-900 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center space-x-1.5"
           >
             <PlusCircle className="w-4 h-4 text-amber-600" />
@@ -231,6 +242,21 @@ export const SellerDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Pending Approval Warning (Requirement 4: New Seller Listing Approval) */}
+      {currentSeller.status !== 'approved' && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-4 sm:p-5 flex items-start space-x-3.5 mb-6 shadow-xs">
+          <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="font-extrabold text-sm text-amber-950">
+              Seller Account Pending Admin Approval
+            </h4>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              A newly registered seller must not be allowed to add or post listings until their account has been approved by the admin. Your shop verification documents are under review by the Provincial Administrator. Once approved, you can freely post listings and receive orders.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Seller Sub-navigation */}
       <div className="flex bg-slate-100 p-1.5 rounded-2xl overflow-x-auto text-xs font-bold scrollbar-none">
@@ -300,14 +326,14 @@ export const SellerDashboard: React.FC = () => {
       {/* ======================================= */}
       {sellerTab === 'dashboard' && (
         <div className="space-y-6">
-          {/* Metrics Grid */}
+          {/* Metrics Grid (Requirement 6: Sales & Commission Separation) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">Gross Product Sales</span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Seller's Own Product Sales</span>
               <span className="text-xl font-black text-slate-900 mt-1 block">
                 ₱{(totalSales ?? 0).toLocaleString()}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5 block">{completedOrders.length} completed orders</span>
+              <span className="text-[10px] text-slate-500 mt-0.5 block">Recorded exclusively as seller's income (delivery fees separate)</span>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
@@ -315,15 +341,15 @@ export const SellerDashboard: React.FC = () => {
               <span className="text-xl font-black text-rose-600 mt-1 block">
                 ₱{totalCommissionDeducted.toFixed(2)}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5 block">Exempt from delivery fees</span>
+              <span className="text-[10px] text-slate-500 mt-0.5 block">Admin earnings from seller product sales</span>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">Net Take-Home Earnings</span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Seller's Net Own Income</span>
               <span className="text-xl font-black text-emerald-600 mt-1 block">
                 ₱{netEarnings.toFixed(2)}
               </span>
-              <span className="text-[10px] text-slate-500 mt-0.5 block">Gross sales minus 3%</span>
+              <span className="text-[10px] text-slate-500 mt-0.5 block">100% credited to seller account</span>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
@@ -595,7 +621,27 @@ export const SellerDashboard: React.FC = () => {
       {/* ======================================= */}
       {/* VIEW 4: ADD NEW PRODUCT FORM */}
       {/* ======================================= */}
-      {sellerTab === 'add_product' && (
+      {sellerTab === 'add_product' && currentSeller.status !== 'approved' && (
+        <div className="bg-white rounded-3xl border-2 border-amber-200 p-8 shadow-sm max-w-xl mx-auto text-center space-y-4 my-6">
+          <div className="w-16 h-16 bg-amber-100 text-amber-800 rounded-3xl flex items-center justify-center mx-auto shadow-xs">
+            <AlertCircle className="w-8 h-8 text-amber-700" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-black text-base text-slate-900">Posting Listings is Locked</h3>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+              A newly registered seller must not be allowed to add or post listings until their account has been approved by the admin.
+            </p>
+            <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+              Your business permit and government ID are undergoing official review by the Provincial Administrator. Once approved, listing access will unlock automatically.
+            </p>
+          </div>
+          <div className="inline-flex items-center px-4 py-2 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold border border-amber-300">
+            Current Status: Pending Admin Verification
+          </div>
+        </div>
+      )}
+
+      {sellerTab === 'add_product' && currentSeller.status === 'approved' && (
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm max-w-2xl mx-auto space-y-4 text-xs">
           <div>
             <h3 className="font-extrabold text-base text-slate-900">List a New Product</h3>

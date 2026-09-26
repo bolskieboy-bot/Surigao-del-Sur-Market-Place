@@ -70,6 +70,21 @@ export const CheckoutModal: React.FC = () => {
     setLoading(true);
 
     try {
+      // Available Stock Control Pre-check (Requirement 2)
+      for (const item of cart) {
+        const available = Number(item.product.stock) || 0;
+        if (available <= 0) {
+          setError(`"${item.product.name}" is currently out of stock. Please remove it from your cart to proceed.`);
+          setLoading(false);
+          return;
+        }
+        if (item.quantity > available) {
+          setError(`Cannot place order: "${item.product.name}" only has ${available} items in stock. Your cart currently has ${item.quantity}. Please adjust your quantity.`);
+          setLoading(false);
+          return;
+        }
+      }
+
       // Primary seller is from the first item
       const primarySellerId = cart[0].product.sellerId;
 

@@ -356,6 +356,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  async updateRiderStatus(riderId: string, status: 'approved' | 'rejected', notes?: string, adminUsername?: string): Promise<{ rider: RiderProfile }> {
+    const res = await fetch(`/api/admin/riders/${riderId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, notes, adminUsername })
+    });
+    return handleResponse(res);
+  },
+
   async moderateProduct(productId: string, status: string, moderationReason?: string, adminUsername?: string): Promise<{ product: Product }> {
     const res = await fetch(`/api/admin/products/${productId}/moderation`, {
       method: 'POST',
@@ -397,6 +406,24 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async updateAdvertisement(id: string, data: any): Promise<{ advertisement: Advertisement }> {
+    const res = await fetch(`/api/advertisements/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deleteAdvertisement(id: string, adminUsername?: string): Promise<{ success: boolean }> {
+    const res = await fetch(`/api/advertisements/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminUsername })
     });
     return handleResponse(res);
   },

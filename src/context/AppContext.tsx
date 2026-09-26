@@ -239,18 +239,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(interval);
   }, [role, currentUser, currentSeller, currentRider]);
 
-  // Cart operations
+  // Cart operations (Requirement 2: Available Stock Control)
   const addToCart = (product: Product, quantity = 1) => {
+    const availableStock = Number(product.stock) || 0;
+    if (availableStock <= 0) {
+      showToast(`Sorry, "${product.name}" is currently out of stock.`);
+      return;
+    }
+
+    let capped = false;
     setCart((prev) => {
       const idx = prev.findIndex((item) => item.product.id === product.id);
       if (idx >= 0) {
+        const currentQty = prev[idx].quantity;
+        const newQty = currentQty + quantity;
+        if (newQty > availableStock) {
+          capped = true;
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], quantity: availableStock };
+          return updated;
+        }
         const updated = [...prev];
-        updated[idx].quantity += quantity;
+        updated[idx] = { ...updated[idx], quantity: newQty };
         return updated;
       }
-      return [...prev, { product, quantity }];
+      const safeQty = Math.min(quantity, availableStock);
+      if (quantity > availableStock) capped = true;
+      return [...prev, { product, quantity: safeQty }];
     });
-    showToast(`Added "${product.name.substring(0, 30)}..." to your cart!`);
+
+    if (capped) {
+      showToast(`Stock limit reached! Only ${availableStock} item(s) available in stock.`);
+    } else {
+      showToast(`Added "${product.name.substring(0, 30)}..." to your cart!`);
+    }
   };
 
   const removeFromCart = (productId: string) => {
@@ -264,7 +286,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
     setCart((prev) =>
-      prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
+      prev.map((item) => {
+        if (item.product.id === productId) {
+          const availableStock = Number(item.product.stock) || 0;
+          if (quantity > availableStock) {
+            showToast(`Cannot exceed seller's available inventory (${availableStock} items).`);
+            return { ...item, quantity: availableStock };
+          }
+          return { ...item, quantity };
+        }
+        return item;
+      })
     );
   };
 

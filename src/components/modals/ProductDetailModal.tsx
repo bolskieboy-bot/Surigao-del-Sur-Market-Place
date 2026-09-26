@@ -166,7 +166,14 @@ export const ProductDetailModal: React.FC = () => {
                 </span>
               )}
               <span className="text-[11px] text-slate-500 ml-auto font-medium">
-                Stock: <strong className="text-slate-900">{product.stock} available</strong>
+                Stock:{' '}
+                {product.stock <= 0 ? (
+                  <strong className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                    Out of Stock
+                  </strong>
+                ) : (
+                  <strong className="text-slate-900">{product.stock} available</strong>
+                )}
               </span>
             </div>
 
@@ -236,40 +243,55 @@ export const ProductDetailModal: React.FC = () => {
               <div className="flex items-center border border-slate-300 rounded-xl overflow-hidden bg-slate-50">
                 <button
                   type="button"
+                  disabled={product.stock <= 0 || quantity <= 1}
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-3 py-1 font-bold text-slate-700 hover:bg-slate-200"
+                  className="px-3 py-1 font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   -
                 </button>
                 <span className="px-3 py-1 font-bold text-slate-900 bg-white">
-                  {quantity}
+                  {product.stock <= 0 ? 0 : quantity}
                 </span>
                 <button
                   type="button"
+                  disabled={product.stock <= 0 || quantity >= product.stock}
                   onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  className="px-3 py-1 font-bold text-slate-700 hover:bg-slate-200"
+                  className="px-3 py-1 font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
               </div>
+              {product.stock > 0 && quantity >= product.stock && (
+                <span className="text-[10px] text-amber-600 font-semibold">Max stock reached</span>
+              )}
             </div>
 
             {/* Actions: Add to Cart & Buy Now */}
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
+                disabled={product.stock <= 0}
                 onClick={() => addToCart(product, quantity)}
-                className="bg-white hover:bg-blue-50 border-2 border-blue-950 text-blue-950 font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center space-x-1.5 shadow-xs"
+                className={`py-2.5 rounded-xl transition-all text-xs flex items-center justify-center space-x-1.5 shadow-xs font-bold ${
+                  product.stock <= 0
+                    ? 'bg-slate-100 border-2 border-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-white hover:bg-blue-50 border-2 border-blue-950 text-blue-950'
+                }`}
               >
                 <ShoppingCart className="w-4 h-4" />
-                <span>Add to Cart</span>
+                <span>{product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}</span>
               </button>
 
               <button
+                disabled={product.stock <= 0}
                 onClick={handleBuyNow}
-                className="bg-blue-950 hover:bg-blue-900 text-amber-400 font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center space-x-1.5 shadow-md"
+                className={`py-2.5 rounded-xl transition-all text-xs flex items-center justify-center space-x-1.5 shadow-md font-bold ${
+                  product.stock <= 0
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-blue-950 hover:bg-blue-900 text-amber-400'
+                }`}
               >
                 <Zap className="w-4 h-4 text-amber-400" />
-                <span>Buy Now</span>
+                <span>{product.stock <= 0 ? 'Unavailable' : 'Buy Now'}</span>
               </button>
             </div>
 

@@ -37,9 +37,9 @@ export const RiderDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const fetchRiderData = async () => {
+  const fetchRiderData = async (isBackground = false) => {
     if (!currentRider) return;
-    setLoading(true);
+    if (!isBackground) setLoading(true);
     try {
       const ordersRes = await api.getRiderOrders(currentRider.id);
       if (ordersRes?.orders) {
@@ -56,13 +56,14 @@ export const RiderDashboard: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch rider data:', err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchRiderData();
-    const interval = setInterval(fetchRiderData, 7000);
+    // Poll frequently (every 3 seconds) so claimed deliveries disappear promptly for all concurrent riders
+    const interval = setInterval(() => fetchRiderData(true), 3000);
     return () => clearInterval(interval);
   }, [currentRider?.id]);
 
@@ -86,9 +87,41 @@ export const RiderDashboard: React.FC = () => {
     );
   }
 
-  // Filter orders
+  // Requirement 1: Rider Registration Approval
+  if (currentRider.status === 'pending') {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4 text-center">
+        <div className="w-16 h-16 bg-amber-100 text-amber-800 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xs">
+          <Clock className="w-8 h-8 text-amber-700" />
+        </div>
+        <h2 className="text-xl font-black text-slate-900 mb-2">Rider Registration Pending Approval</h2>
+        <p className="text-slate-600 text-xs sm:text-sm mb-4 max-w-md mx-auto leading-relaxed">
+          Rider registration must be approved by the admin first for verification before the rider can proceed. Your submitted driver's license ({currentRider.licenseNumber}) and vehicle ({currentRider.vehicleType} - {currentRider.plateNumber}) are under review by the Provincial Administrator.
+        </p>
+        <div className="inline-flex items-center px-4 py-2 bg-amber-50 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold">
+          Verification In Progress • Awaiting Admin Approval
+        </div>
+      </div>
+    );
+  }
+
+  if (currentRider.status === 'rejected') {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4 text-center">
+        <div className="w-16 h-16 bg-rose-100 text-rose-800 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xs">
+          <AlertCircle className="w-8 h-8 text-rose-700" />
+        </div>
+        <h2 className="text-xl font-black text-slate-900 mb-2">Rider Application Not Approved</h2>
+        <p className="text-slate-600 text-xs sm:text-sm mb-6 max-w-md mx-auto leading-relaxed">
+          Your rider registration was not approved by the administrator. Please contact Provincial Marketplace Administration.
+        </p>
+      </div>
+    );
+  }
+
+  // Filter orders (Requirement 7: Rider Delivery Disappearance once claimed)
   const availableOrders = orders.filter(
-    (o) => !o.riderId && o.fulfillmentType === 'delivery' && o.orderStatus !== 'completed' && o.orderStatus !== 'cancelled'
+    (o) => (!o.riderId || o.riderId === '') && o.fulfillmentType === 'delivery' && o.orderStatus !== 'completed' && o.orderStatus !== 'cancelled'
   );
   const myActiveOrders = orders.filter(
     (o) => o.riderId === currentRider.id && o.orderStatus !== 'completed' && o.orderStatus !== 'cancelled'
@@ -103,6 +136,8 @@ export const RiderDashboard: React.FC = () => {
     try {
       const res = await api.acceptDelivery(order.id, currentRider.id, currentRider.riderName, currentRider.mobileNumber);
       if (res.order) {
+        // Automatically update state so claimed job immediately disappears from available orders
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? res.order : o)));
         showToast(`Job accepted! You are assigned to deliver order #${order.id}.`);
         await fetchRiderData();
         setRiderTab('active');
@@ -208,13 +243,14 @@ export const RiderDashboard: React.FC = () => {
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 shadow-xs">
-          <span className="text-[11px] font-semibold text-slate-500 block mb-1">Total Fee Earnings</span>
+          <span className="text-[11px] font-semibold text-slate-500 block mb-1">Rider's Own Delivery Sales</span>
           <div className="flex items-baseline space-x-2">
             <span className="text-xl sm:text-2xl font-black text-emerald-700">
               ₱{stats.totalEarnings.toLocaleString()}
             </span>
-            <span className="text-[10px] text-emerald-600 font-bold">100% Keep</span>
+            <span className="text-[10px] text-emerald-600 font-bold">100% Kept</span>
           </div>
+          <span className="text-[9px] text-slate-400 block mt-1">Recorded exclusively as rider's sales (zero commission)</span>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 shadow-xs">

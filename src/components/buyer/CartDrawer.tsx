@@ -85,22 +85,29 @@ export const CartDrawer: React.FC = () => {
               </div>
 
               {/* Quantity Controls */}
-              <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50 text-xs">
-                <button
-                  onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
-                  className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold"
-                >
-                  -
-                </button>
-                <span className="px-2.5 py-1 font-bold bg-white text-slate-900">
-                  {item.quantity}
+              <div className="flex flex-col items-end space-y-1">
+                <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50 text-xs">
+                  <button
+                    onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                    className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold"
+                  >
+                    -
+                  </button>
+                  <span className="px-2.5 py-1 font-bold bg-white text-slate-900">
+                    {item.quantity}
+                  </span>
+                  <button
+                    disabled={item.quantity >= item.product.stock}
+                    onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                    className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                    title={item.quantity >= item.product.stock ? 'Maximum available stock reached' : 'Increase quantity'}
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-400">
+                  {item.product.stock} in stock
                 </span>
-                <button
-                  onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
-                  className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold"
-                >
-                  +
-                </button>
               </div>
 
               {/* Item Total & Remove */}
