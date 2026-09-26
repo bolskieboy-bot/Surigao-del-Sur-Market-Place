@@ -36,6 +36,9 @@ export interface LinkedAccount {
 
 export interface User {
   id: string;
+  username?: string;
+  password?: string;
+  passwordHash?: string;
   fullName: string;
   mobileNumber: string;
   email: string;
@@ -55,6 +58,9 @@ export interface User {
 export interface SellerProfile {
   id: string;
   userId: string;
+  username?: string;
+  password?: string;
+  passwordHash?: string;
   ownerName: string;
   shopName: string;
   mobileNumber: string;
@@ -84,6 +90,9 @@ export interface SellerProfile {
 export interface RiderProfile {
   id: string;
   userId: string;
+  username?: string;
+  password?: string;
+  passwordHash?: string;
   riderName: string;
   mobileNumber: string;
   email: string;

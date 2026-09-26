@@ -62,7 +62,7 @@ export const RiderDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchRiderData();
-    const interval = setInterval(fetchRiderData, 10000);
+    const interval = setInterval(fetchRiderData, 7000);
     return () => clearInterval(interval);
   }, [currentRider?.id]);
 

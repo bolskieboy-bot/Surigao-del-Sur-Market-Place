@@ -80,6 +80,8 @@ export const SellerDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchSellerData();
+    const interval = setInterval(fetchSellerData, 7000);
+    return () => clearInterval(interval);
   }, [currentSeller]);
 
   if (!currentSeller) {

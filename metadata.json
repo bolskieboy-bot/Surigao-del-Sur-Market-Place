@@ -2,5 +2,7 @@
   "name": "Surigao del Sur Marketplace",
   "description": "Buy Local. Sell Local. Grow Surigao del Sur. An exclusive online marketplace platform for buyers and sellers across Surigao del Sur.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

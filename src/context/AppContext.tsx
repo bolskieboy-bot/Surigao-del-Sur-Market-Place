@@ -107,11 +107,51 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [role, setRole] = useState<UserRole>('buyer');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentSeller, setCurrentSeller] = useState<SellerProfile | null>(null);
-  const [currentAdmin, setCurrentAdmin] = useState<AdminAccount | null>(null);
-  const [currentRider, setCurrentRider] = useState<RiderProfile | null>(null);
+  const [role, setRole] = useState<UserRole>(() => {
+    try {
+      const saved = localStorage.getItem('sds_role');
+      if (saved === 'admin' || saved === 'seller' || saved === 'buyer' || saved === 'rider') {
+        return saved;
+      }
+    } catch {}
+    return 'buyer';
+  });
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('sds_current_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [currentSeller, setCurrentSeller] = useState<SellerProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('sds_current_seller');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [currentAdmin, setCurrentAdmin] = useState<AdminAccount | null>(() => {
+    try {
+      const saved = localStorage.getItem('sds_current_admin');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [currentRider, setCurrentRider] = useState<RiderProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('sds_current_rider');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const [isMobileView, setIsMobileView] = useState(false);
   const [selectedMunicipality, setSelectedMunicipality] = useState<string>('All');
@@ -137,6 +177,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync auth session state to localStorage for persistence across reloads, networks, and cellphones
+  useEffect(() => {
+    try {
+      if (role) localStorage.setItem('sds_role', role);
+      if (currentUser) localStorage.setItem('sds_current_user', JSON.stringify(currentUser));
+      else localStorage.removeItem('sds_current_user');
+
+      if (currentSeller) localStorage.setItem('sds_current_seller', JSON.stringify(currentSeller));
+      else localStorage.removeItem('sds_current_seller');
+
+      if (currentAdmin) localStorage.setItem('sds_current_admin', JSON.stringify(currentAdmin));
+      else localStorage.removeItem('sds_current_admin');
+
+      if (currentRider) localStorage.setItem('sds_current_rider', JSON.stringify(currentRider));
+      else localStorage.removeItem('sds_current_rider');
+    } catch (e) {
+      console.error('Session sync error:', e);
+    }
+  }, [role, currentUser, currentSeller, currentAdmin, currentRider]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -249,6 +309,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    try {
+      localStorage.removeItem('sds_current_user');
+      localStorage.removeItem('sds_current_seller');
+      localStorage.removeItem('sds_current_admin');
+      localStorage.removeItem('sds_current_rider');
+      localStorage.setItem('sds_role', 'buyer');
+    } catch {}
     setCurrentUser(null);
     setCurrentSeller(null);
     setCurrentAdmin(null);

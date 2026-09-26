@@ -100,6 +100,8 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchAllAdminData();
+    const interval = setInterval(fetchAllAdminData, 7000);
+    return () => clearInterval(interval);
   }, [financeMuniFilter]);
 
   if (!currentAdmin) {
@@ -108,7 +110,7 @@ export const AdminDashboard: React.FC = () => {
         <ShieldCheck className="w-12 h-12 text-rose-600 mx-auto" />
         <h2 className="text-base font-bold text-slate-800">Administrator Access Required</h2>
         <p className="text-xs text-slate-500">
-          Please log in using one of the five authorized provincial admin accounts.
+          Please log in using one of the 8 authorized provincial admin accounts (admin1 - admin8).
         </p>
       </div>
     );

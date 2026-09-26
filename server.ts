@@ -24,8 +24,17 @@ import {
 } from './src/types';
 import { SURIGAO_DEL_SUR_MUNICIPALITIES, PROHIBITED_CATEGORIES } from './src/data/surigaoData';
 import { calculateGrabDeliveryFee, getMunicipalDistance } from './src/utils/deliveryCalculator';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, doc, getDoc, setDoc, Firestore } from 'firebase/firestore';
+import firebaseConfig from './firebase-applet-config.json';
 
 dotenv.config();
+
+// Firebase Firestore instance for cross-device/network cloud parity
+const fbApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const firestoreDb: Firestore = firebaseConfig.firestoreDatabaseId
+  ? getFirestore(fbApp, firebaseConfig.firestoreDatabaseId)
+  : getFirestore(fbApp);
 
 const PORT = 3000;
 const FIXED_ADMIN_PASSWORD = '1234567';
@@ -152,6 +161,51 @@ const FIXED_ADMIN_ACCOUNTS: (AdminAccount & { passwordHash: string })[] = [
     email: 'admin8@surigaodelsur.ph'
   }
 ];
+
+// Helper to robustly find any of the 8 fixed admin accounts regardless of casing, spacing, or format
+export function findAdminAccount(input: string | undefined): (AdminAccount & { passwordHash: string }) | undefined {
+  if (!input) return undefined;
+  const raw = String(input).trim().toLowerCase();
+
+  // 1. Direct match on username, email, or id
+  let match = FIXED_ADMIN_ACCOUNTS.find(
+    (a) => a.username.toLowerCase() === raw || (a.email && a.email.toLowerCase() === raw) || a.id.toLowerCase() === raw
+  );
+  if (match) return match;
+
+  // 2. Normalized: strip spaces, hyphens, underscores, domains
+  const stripped = raw.replace('@surigaodelsur.ph', '').replace('@gmail.com', '').replace(/[\s\-_]/g, '');
+  match = FIXED_ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === stripped);
+  if (match) return match;
+
+  // 3. Catch common speech/keyboard variations: "admin 1", "admin 2", "account 1", "admin#1", etc.
+  const numMatch = stripped.match(/^(?:admin|administrator|account|user|provincialadmin)\s*([1-8])$/);
+  if (numMatch && numMatch[1]) {
+    const target = `admin${numMatch[1]}`;
+    match = FIXED_ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === target);
+    if (match) return match;
+  }
+
+  // 4. If user inputs just "admin" or "administrator", default to admin1
+  if (stripped === 'admin' || stripped === 'administrator' || stripped === 'provincialadmin') {
+    return FIXED_ADMIN_ACCOUNTS[0];
+  }
+
+  return undefined;
+}
+
+// Helper to robustly verify admin password, accommodating mobile keyboards and trailing spaces
+export function verifyAdminPassword(password: string | undefined, admin: AdminAccount & { passwordHash: string }): boolean {
+  if (!password) return false;
+  const cleanPass = String(password).trim();
+  const noSpacePass = cleanPass.replace(/\s+/g, '');
+  return (
+    cleanPass === '1234567' ||
+    noSpacePass === '1234567' ||
+    password === '1234567' ||
+    admin.passwordHash === hashPassword(cleanPass)
+  );
+}
 
 // Initialize seed data if not present
 function getInitialDB(): MarketplaceDB {
@@ -994,16 +1048,72 @@ function loadDatabase(): MarketplaceDB {
   return init;
 }
 
+// Background sync to Firestore so all containers, devices, and networks share identical persistent state
+async function syncToFirestore(toSave: MarketplaceDB) {
+  try {
+    await setDoc(doc(firestoreDb, 'marketplace_sync', 'current_state'), {
+      users: toSave.users,
+      sellers: toSave.sellers,
+      riders: toSave.riders,
+      products: toSave.products,
+      orders: toSave.orders,
+      commissionTransactions: toSave.commissionTransactions,
+      chatMessages: toSave.chatMessages,
+      reviews: toSave.reviews,
+      reports: toSave.reports,
+      advertisements: toSave.advertisements,
+      announcements: toSave.announcements,
+      notifications: toSave.notifications,
+      auditLogs: toSave.auditLogs.slice(0, 100),
+      settings: toSave.settings,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (err: any) {
+    // Non-blocking log
+    console.warn('Firestore cloud sync notice:', err?.message || err);
+  }
+}
+
+// Hydrate from Firestore if available
+async function hydrateFromFirestore() {
+  try {
+    const snap = await getDoc(doc(firestoreDb, 'marketplace_sync', 'current_state'));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data) {
+        if (Array.isArray(data.users) && data.users.length > 0) db.users = data.users;
+        if (Array.isArray(data.sellers) && data.sellers.length > 0) db.sellers = data.sellers;
+        if (Array.isArray(data.riders) && data.riders.length > 0) db.riders = data.riders;
+        if (Array.isArray(data.products) && data.products.length > 0) db.products = data.products;
+        if (Array.isArray(data.orders) && data.orders.length > 0) db.orders = data.orders;
+        if (Array.isArray(data.commissionTransactions)) db.commissionTransactions = data.commissionTransactions;
+        if (Array.isArray(data.chatMessages)) db.chatMessages = data.chatMessages;
+        if (Array.isArray(data.reviews)) db.reviews = data.reviews;
+        if (Array.isArray(data.reports)) db.reports = data.reports;
+        if (Array.isArray(data.notifications)) db.notifications = data.notifications;
+        if (data.settings) db.settings = { ...db.settings, ...data.settings };
+        saveDatabase(db);
+        console.log('Synchronized state with Firestore across cloud instances successfully.');
+      }
+    }
+  } catch (err: any) {
+    console.warn('Initial Firestore hydration notice:', err?.message || err);
+  }
+}
+
 function saveDatabase(dataToSave?: MarketplaceDB) {
   try {
     const toSave = dataToSave || db;
     fs.writeFileSync(DATA_FILE, JSON.stringify(toSave, null, 2), 'utf-8');
+    syncToFirestore(toSave).catch(() => {});
   } catch (err) {
     console.error('Failed to persist database file:', err);
   }
 }
 
 db = loadDatabase();
+// Trigger async sync on startup
+hydrateFromFirestore().catch(() => {});
 
 // Audit log recorder
 function logAdminAction(adminUsername: string, adminId: string, action: string, affectedRecord: string, details?: string, ip?: string) {
@@ -1023,6 +1133,18 @@ function logAdminAction(adminUsername: string, adminId: string, action: string, 
 
 async function startServer() {
   const app = express();
+
+  // Cross-Origin Resource Sharing for all devices, cellphones, and external networks
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -1030,21 +1152,20 @@ async function startServer() {
   // AUTHENTICATION & ADMIN APIS
   // ==========================================
 
-  // Admin login endpoint
+  // Admin login endpoint - supports all 8 admin accounts with robust matching
   app.post('/api/auth/admin-login', (req: Request, res: Response) => {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required.' });
     }
 
-    const cleanUsername = username.trim().toLowerCase();
-    const admin = FIXED_ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === cleanUsername);
+    const admin = findAdminAccount(username);
     if (!admin) {
-      return res.status(401).json({ error: 'Invalid administrator credentials.' });
+      return res.status(401).json({ error: 'Administrator account not recognized. Please check your username.' });
     }
 
-    if (password !== '1234567' && admin.passwordHash !== hashPassword(password)) {
-      return res.status(401).json({ error: 'Invalid administrator credentials.' });
+    if (!verifyAdminPassword(password, admin)) {
+      return res.status(401).json({ error: 'Incorrect administrator password.' });
     }
 
     admin.lastLogin = new Date().toISOString();
@@ -1060,7 +1181,8 @@ async function startServer() {
         mustChangePassword: false,
         email: admin.email,
         lastLogin: admin.lastLogin
-      }
+      },
+      message: `Administrator account ${admin.username} authenticated successfully.`
     });
   });
 
@@ -1110,76 +1232,8 @@ async function startServer() {
     const clean = identifier.trim().toLowerCase();
 
     // Check if an admin is logging in through the form
-    const adminMatch = FIXED_ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === clean);
-    if (adminMatch && (password === '1234567' || adminMatch.passwordHash === hashPassword(password))) {
-      return res.json({
-        user: {
-          id: adminMatch.id,
-          fullName: adminMatch.name,
-          mobileNumber: '09000000000',
-          email: adminMatch.email,
-          role: 'admin',
-          municipality: 'Tandag City',
-          barangay: 'Capitol Hills',
-          completeAddress: 'Provincial Capitol, Tandag City, Surigao del Sur',
-          createdAt: '2026-01-01T00:00:00.000Z'
-        },
-        admin: {
-          id: adminMatch.id,
-          username: adminMatch.username,
-          name: adminMatch.name,
-          role: adminMatch.role,
-          mustChangePassword: false,
-          email: adminMatch.email,
-          lastLogin: new Date().toISOString()
-        },
-        isAdmin: true
-      });
-    }
-
-    const rider = db.riders.find(
-      (r) =>
-        r.email.toLowerCase() === clean ||
-        r.mobileNumber === clean ||
-        r.mobileNumber.replace(/[^0-9]/g, '') === clean.replace(/[^0-9]/g, '') ||
-        r.riderName.toLowerCase() === clean ||
-        r.riderName.toLowerCase().includes(clean)
-    );
-
-    if (!rider) {
-      return res.status(404).json({ error: 'Delivery rider account not found. Please register as a rider first.' });
-    }
-
-    const user = db.users.find((u) => u.id === rider.userId || u.email.toLowerCase() === rider.email.toLowerCase()) || {
-      id: rider.userId,
-      fullName: rider.riderName,
-      mobileNumber: rider.mobileNumber,
-      email: rider.email,
-      role: 'rider' as const,
-      municipality: rider.municipality,
-      barangay: rider.barangay,
-      completeAddress: `${rider.barangay}, ${rider.municipality}, Surigao del Sur`,
-      createdAt: rider.createdAt
-    };
-
-    return res.json({
-      rider,
-      user
-    });
-  });
-
-  // Buyer & Seller General Login
-  app.post('/api/auth/login', (req: Request, res: Response) => {
-    const { identifier, password } = req.body; // mobile, email, or name
-    if (!identifier) {
-      return res.status(400).json({ error: 'Mobile number, email, or account name is required.' });
-    }
-
-    const clean = identifier.trim().toLowerCase();
-
-    // Check if this is an admin logging in
-    const adminMatch = FIXED_ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === clean);
-    if (adminMatch && (password === '1234567' || adminMatch.passwordHash === hashPassword(password))) {
+    const adminMatch = findAdminAccount(identifier);
+    if (adminMatch && verifyAdminPassword(password, adminMatch)) {
       adminMatch.lastLogin = new Date().toISOString();
       return res.json({
         user: {
@@ -1206,19 +1260,156 @@ async function startServer() {
       });
     }
 
-    const user = db.users.find(
+    let rider = db.riders.find(
+      (r) =>
+        (r.username && r.username.toLowerCase() === clean) ||
+        r.email.toLowerCase() === clean ||
+        r.mobileNumber === clean ||
+        r.mobileNumber.replace(/[^0-9]/g, '') === clean.replace(/[^0-9]/g, '') ||
+        r.riderName.toLowerCase() === clean ||
+        r.riderName.toLowerCase().includes(clean)
+    );
+
+    if (!rider) {
+      const rUser = db.users.find(
+        (u) =>
+          u.role === 'rider' &&
+          ((u.username && u.username.toLowerCase() === clean) ||
+            u.email.toLowerCase() === clean ||
+            u.mobileNumber === clean)
+      );
+      if (rUser) {
+        rider = db.riders.find((r) => r.userId === rUser.id);
+      }
+    }
+
+    if (!rider) {
+      return res.status(404).json({ error: 'Delivery rider account not found. Please register as a rider first.' });
+    }
+
+    const user = db.users.find((u) => u.id === rider.userId || u.email.toLowerCase() === rider.email.toLowerCase()) || {
+      id: rider.userId,
+      username: rider.username,
+      fullName: rider.riderName,
+      mobileNumber: rider.mobileNumber,
+      email: rider.email,
+      role: 'rider' as const,
+      municipality: rider.municipality,
+      barangay: rider.barangay,
+      completeAddress: `${rider.barangay}, ${rider.municipality}, Surigao del Sur`,
+      createdAt: rider.createdAt
+    };
+
+    // Verify password if account has a password
+    const riderPwd = rider.password || user.password;
+    const riderPwdHash = rider.passwordHash || user.passwordHash;
+    if (riderPwd || riderPwdHash) {
+      const cleanPass = password ? String(password).trim() : '';
+      const passMatches =
+        (riderPwd && riderPwd === cleanPass) ||
+        (riderPwdHash && riderPwdHash === hashPassword(cleanPass));
+      if (!passMatches) {
+        return res.status(401).json({ error: 'Incorrect password for delivery rider account.' });
+      }
+    }
+
+    return res.json({
+      rider,
+      user
+    });
+  });
+
+  // Buyer & Seller General Login
+  app.post('/api/auth/login', (req: Request, res: Response) => {
+    const { identifier, password } = req.body; // mobile, email, username, or name
+    if (!identifier) {
+      return res.status(400).json({ error: 'Username, mobile number, email, or account name is required.' });
+    }
+
+    const clean = identifier.trim().toLowerCase();
+
+    // Check if this is an admin logging in
+    const adminMatch = findAdminAccount(identifier);
+    if (adminMatch && verifyAdminPassword(password, adminMatch)) {
+      adminMatch.lastLogin = new Date().toISOString();
+      return res.json({
+        user: {
+          id: adminMatch.id,
+          username: adminMatch.username,
+          fullName: adminMatch.name,
+          mobileNumber: '09000000000',
+          email: adminMatch.email,
+          role: 'admin',
+          municipality: 'Tandag City',
+          barangay: 'Capitol Hills',
+          completeAddress: 'Provincial Capitol, Tandag City, Surigao del Sur',
+          createdAt: '2026-01-01T00:00:00.000Z'
+        },
+        admin: {
+          id: adminMatch.id,
+          username: adminMatch.username,
+          name: adminMatch.name,
+          role: adminMatch.role,
+          mustChangePassword: false,
+          email: adminMatch.email,
+          lastLogin: adminMatch.lastLogin
+        },
+        isAdmin: true
+      });
+    }
+
+    let user = db.users.find(
       (u) =>
+        (u.username && u.username.toLowerCase() === clean) ||
         u.email.toLowerCase() === clean ||
         u.mobileNumber === clean ||
         u.mobileNumber.replace(/[^0-9]/g, '') === clean.replace(/[^0-9]/g, '') ||
         u.fullName.toLowerCase() === clean
     );
+
+    if (!user) {
+      const seller = db.sellers.find(
+        (s) =>
+          (s.username && s.username.toLowerCase() === clean) ||
+          s.shopName.toLowerCase() === clean ||
+          s.email.toLowerCase() === clean ||
+          s.mobileNumber === clean
+      );
+      if (seller) {
+        user = db.users.find((u) => u.id === seller.userId);
+      }
+    }
+
+    if (!user) {
+      const rider = db.riders.find(
+        (r) =>
+          (r.username && r.username.toLowerCase() === clean) ||
+          r.riderName.toLowerCase() === clean ||
+          r.email.toLowerCase() === clean ||
+          r.mobileNumber === clean
+      );
+      if (rider) {
+        user = db.users.find((u) => u.id === rider.userId);
+      }
+    }
+
     if (!user) {
       return res.status(404).json({ error: 'Account not found. Please check your credentials or register.' });
     }
 
     if (user.isSuspended) {
       return res.status(403).json({ error: 'This account has been suspended by an administrator.' });
+    }
+
+    // Verify password if account has a password
+    if (user.password || user.passwordHash) {
+      const cleanPass = password ? String(password).trim() : '';
+      const passMatches =
+        (user.password && user.password === cleanPass) ||
+        (user.passwordHash && user.passwordHash === hashPassword(cleanPass));
+      if (!passMatches) {
+        return res.status(401).json({ error: 'Incorrect password. Please try again.' });
+      }
     }
 
     let sellerProfile: SellerProfile | undefined;
@@ -1238,7 +1429,7 @@ async function startServer() {
 
   // Register Buyer
   app.post('/api/auth/register-buyer', (req: Request, res: Response) => {
-    const { fullName, mobileNumber, email, municipality, barangay, completeAddress, profilePhoto } = req.body;
+    const { username, password, fullName, mobileNumber, email, municipality, barangay, completeAddress, profilePhoto } = req.body;
 
     if (!fullName || !mobileNumber || !municipality || !barangay || !completeAddress) {
       return res.status(400).json({ error: 'Please provide all required registration fields.' });
@@ -1250,13 +1441,26 @@ async function startServer() {
       return res.status(400).json({ error: 'Registration is strictly limited to municipalities and cities of Surigao del Sur.' });
     }
 
+    const cleanUsername = username ? String(username).trim().toLowerCase() : '';
+    if (cleanUsername) {
+      const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
+      if (uExists) {
+        return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
+      }
+    }
+
     const existing = db.users.find((u) => u.mobileNumber === mobileNumber.trim() || (email && u.email.toLowerCase() === email.trim().toLowerCase()));
     if (existing) {
       return res.status(409).json({ error: 'An account with this mobile number or email already exists.' });
     }
 
+    const cleanPass = password ? String(password).trim() : undefined;
+
     const newUser: User = {
       id: `user_${Date.now()}`,
+      username: cleanUsername || undefined,
+      password: cleanPass,
+      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
       fullName: fullName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@buyer.sds`,
@@ -1281,6 +1485,8 @@ async function startServer() {
   // Register Seller
   app.post('/api/auth/register-seller', (req: Request, res: Response) => {
     const {
+      username,
+      password,
       ownerName,
       shopName,
       mobileNumber,
@@ -1303,11 +1509,23 @@ async function startServer() {
       return res.status(400).json({ error: 'Sellers must be physically located within Surigao del Sur unless specifically pre-approved.' });
     }
 
+    const cleanUsername = username ? String(username).trim().toLowerCase() : '';
+    if (cleanUsername) {
+      const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
+      if (uExists) {
+        return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
+      }
+    }
+
+    const cleanPass = password ? String(password).trim() : undefined;
     const userId = `user_${Date.now()}`;
     const sellerId = `seller_${Date.now()}`;
 
     const newUser: User = {
       id: userId,
+      username: cleanUsername || undefined,
+      password: cleanPass,
+      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
       fullName: ownerName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@seller.sds`,
@@ -1322,6 +1540,9 @@ async function startServer() {
     const newSeller: SellerProfile = {
       id: sellerId,
       userId,
+      username: cleanUsername || undefined,
+      password: cleanPass,
+      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
       ownerName: ownerName.trim(),
       shopName: shopName.trim(),
       mobileNumber: mobileNumber.trim(),
@@ -1372,6 +1593,8 @@ async function startServer() {
   // Register Rider
   app.post('/api/auth/register-rider', (req: Request, res: Response) => {
     const {
+      username,
+      password,
       riderName,
       mobileNumber,
       email,
@@ -1392,11 +1615,24 @@ async function startServer() {
       return res.status(400).json({ error: 'Riders must operate within Surigao del Sur LGUs.' });
     }
 
+    const cleanUsername = username ? String(username).trim().toLowerCase() : '';
+    if (cleanUsername) {
+      const uExists = db.users.find((u) => u.username?.toLowerCase() === cleanUsername);
+      const rExists = db.riders.find((r) => r.username?.toLowerCase() === cleanUsername);
+      if (uExists || rExists) {
+        return res.status(409).json({ error: 'This username is already taken. Please choose another username.' });
+      }
+    }
+
+    const cleanPass = password ? String(password).trim() : undefined;
     const userId = `user_${Date.now()}`;
     const riderId = `rider_${Date.now()}`;
 
     const newUser: User = {
       id: userId,
+      username: cleanUsername || undefined,
+      password: cleanPass,
+      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
       fullName: riderName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@rider.sds`,
@@ -1411,6 +1647,9 @@ async function startServer() {
     const newRider: RiderProfile = {
       id: riderId,
       userId,
+      username: cleanUsername || undefined,
+      password: cleanPass,
+      passwordHash: cleanPass ? hashPassword(cleanPass) : undefined,
       riderName: riderName.trim(),
       mobileNumber: mobileNumber.trim(),
       email: email ? email.trim() : `${mobileNumber.trim()}@rider.sds`,
@@ -2739,10 +2978,12 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Surigao del Sur Marketplace] Server active on http://0.0.0.0:${PORT}`);
     console.log(`[Commission Engine] Active rate: ${(db.settings.commissionRate * 100).toFixed(1)}%`);
-    console.log(`[Admin Bootstrapped] 5 Administrator accounts loaded (Admin1 - Admin5)`);
+    console.log(`[Admin Bootstrapped] Exactly 8 Administrator accounts activated (admin1 - admin8)`);
   });
 }
 
-startServer().catch((err) => {
-  console.error('Fatal server startup error:', err);
-});
+if (!process.env.TEST_ENV) {
+  startServer().catch((err) => {
+    console.error('Fatal server startup error:', err);
+  });
+}

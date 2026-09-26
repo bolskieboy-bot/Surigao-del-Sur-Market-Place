@@ -11,25 +11,204 @@
       "completeAddress": "Bag-ong Lungsod, Tandag City, Surigao del Sur",
       "profilePhoto": "",
       "createdAt": "2026-09-24T10:28:26.895Z"
+    },
+    {
+      "id": "user_1790245874199",
+      "fullName": "Juan Dela Cruz",
+      "mobileNumber": "09317218765",
+      "email": "bolskieboy@gmail.com",
+      "role": "buyer",
+      "municipality": "Madrid",
+      "barangay": "Poblacion",
+      "completeAddress": "Purok 7 Brgy. Quirino, Madrid Surigao del Sur",
+      "profilePhoto": "",
+      "createdAt": "2026-09-24T10:31:14.199Z",
+      "paymentMethods": {
+        "gcash": {
+          "linked": false
+        },
+        "maya": {
+          "linked": false
+        }
+      }
+    },
+    {
+      "id": "user_1790245948591",
+      "fullName": "Rey John Piosang",
+      "mobileNumber": "09317218765",
+      "email": "bolskieboy@gmail.com",
+      "role": "seller",
+      "municipality": "Madrid",
+      "barangay": "Poblacion",
+      "completeAddress": "Purok 7 Brgy. Quirino, Madrid Surigao del Sur",
+      "profilePhoto": "",
+      "createdAt": "2026-09-24T10:32:28.591Z"
+    },
+    {
+      "id": "user_1790423522084",
+      "username": "buyer_1790423521935",
+      "password": "password123",
+      "passwordHash": "h_1403730359_11",
+      "fullName": "Test Buyer",
+      "mobileNumber": "09993521935",
+      "email": "buyer1790423521935@test.com",
+      "role": "buyer",
+      "municipality": "Tandag City",
+      "barangay": "Poblacion",
+      "completeAddress": "Purok 1, Poblacion, Tandag City",
+      "profilePhoto": "",
+      "createdAt": "2026-09-26T11:52:02.084Z",
+      "paymentMethods": {
+        "gcash": {
+          "linked": false
+        },
+        "maya": {
+          "linked": false
+        }
+      }
+    },
+    {
+      "id": "user_1790423522119",
+      "username": "rider_1790423521935",
+      "password": "riderpass123",
+      "passwordHash": "h_2108195015_12",
+      "fullName": "Test Rider",
+      "mobileNumber": "09983521935",
+      "email": "rider1790423521935@test.com",
+      "role": "rider",
+      "municipality": "Tandag City",
+      "barangay": "Poblacion",
+      "completeAddress": "Poblacion, Tandag City, Surigao del Sur",
+      "profilePhoto": "",
+      "createdAt": "2026-09-26T11:52:02.119Z"
+    },
+    {
+      "id": "user_1790423522134",
+      "username": "seller_1790423521935",
+      "password": "sellerpass123",
+      "passwordHash": "h_1619482590_13",
+      "fullName": "Test Seller Owner",
+      "mobileNumber": "09973521935",
+      "email": "seller1790423521935@test.com",
+      "role": "seller",
+      "municipality": "Tandag City",
+      "barangay": "Poblacion",
+      "completeAddress": "Store St., Tandag City",
+      "profilePhoto": "",
+      "createdAt": "2026-09-26T11:52:02.134Z"
+    },
+    {
+      "id": "user_1790423545573",
+      "username": "buyer_1790423545424",
+      "password": "password123",
+      "passwordHash": "h_1403730359_11",
+      "fullName": "Test Buyer",
+      "mobileNumber": "09993545424",
+      "email": "buyer1790423545424@test.com",
+      "role": "buyer",
+      "municipality": "Tandag City",
+      "barangay": "Poblacion",
+      "completeAddress": "Purok 1, Poblacion, Tandag City",
+      "profilePhoto": "",
+      "createdAt": "2026-09-26T11:52:25.573Z",
+      "paymentMethods": {
+        "gcash": {
+          "linked": false
+        },
+        "maya": {
+          "linked": false
+        }
+      }
+    },
+    {
+      "id": "user_1790423545601",
+      "username": "rider_1790423545424",
+      "password": "riderpass123",
+      "passwordHash": "h_2108195015_12",
+      "fullName": "Test Rider",
+      "mobileNumber": "09983545424",
+      "email": "rider1790423545424@test.com",
+      "role": "rider",
+      "municipality": "Tandag City",
+      "barangay": "Poblacion",
+      "completeAddress": "Poblacion, Tandag City, Surigao del Sur",
+      "profilePhoto": "",
+      "createdAt": "2026-09-26T11:52:25.601Z"
+    },
+    {
+      "id": "user_1790423545616",
+      "username": "seller_1790423545424",
+      "password": "sellerpass123",
+      "passwordHash": "h_1619482590_13",
+      "fullName": "Test Seller Owner",
+      "mobileNumber": "09973545424",
+      "email": "seller1790423545424@test.com",
+      "role": "seller",
+      "municipality": "Tandag City",
+      "barangay": "Poblacion",
+      "completeAddress": "Store St., Tandag City",
+      "profilePhoto": "",
+      "createdAt": "2026-09-26T11:52:25.616Z"
     }
   ],
-  "sellers": [],
+  "sellers": [
+    {
+      "id": "seller_1790423545616",
+      "userId": "user_1790423545616",
+      "username": "seller_1790423545424",
+      "password": "sellerpass123",
+      "passwordHash": "h_1619482590_13",
+      "ownerName": "Test Seller Owner",
+      "shopName": "Test Seller Store",
+      "mobileNumber": "09973545424",
+      "email": "seller1790423545424@test.com",
+      "municipality": "Tandag City",
+      "barangay": "Poblacion",
+      "businessAddress": "Store St., Tandag City",
+      "shopDescription": "Test Shop",
+      "profilePhoto": "",
+      "idDocumentUrl": "",
+      "businessPermitUrl": "",
+      "status": "pending",
+      "verified": false,
+      "rating": 0,
+      "reviewCount": 0,
+      "featured": false,
+      "paymentMethods": {
+        "gcash": {
+          "linked": false,
+          "enabled": false
+        },
+        "maya": {
+          "linked": false,
+          "enabled": false
+        },
+        "cod": {
+          "enabled": true
+        }
+      },
+      "createdAt": "2026-09-26T11:52:25.616Z"
+    }
+  ],
   "riders": [
     {
-      "id": "rider_1790245706895",
-      "userId": "user_1790245706895",
-      "riderName": "Test Rider Express",
-      "mobileNumber": "09181234567",
-      "email": "testrider@gmail.com",
+      "id": "rider_1790423545601",
+      "userId": "user_1790423545601",
+      "username": "rider_1790423545424",
+      "password": "riderpass123",
+      "passwordHash": "h_2108195015_12",
+      "riderName": "Test Rider",
+      "mobileNumber": "09983545424",
+      "email": "rider1790423545424@test.com",
       "municipality": "Tandag City",
-      "barangay": "Bag-ong Lungsod",
+      "barangay": "Poblacion",
       "vehicleType": "Motorcycle",
-      "plateNumber": "123-SDS",
+      "plateNumber": "TEST-5424",
       "licenseNumber": "SUR-LIC-PENDING",
       "active": true,
       "totalDeliveries": 0,
       "totalEarnings": 0,
-      "createdAt": "2026-09-24T10:28:26.895Z"
+      "createdAt": "2026-09-26T11:52:25.601Z"
     }
   ],
   "adminAccounts": [
@@ -40,8 +219,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin1@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:23.997Z"
+      "email": "admin1@surigaodelsur.ph"
     },
     {
       "id": "admin_2",
@@ -50,8 +228,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin2@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:24.014Z"
+      "email": "admin2@surigaodelsur.ph"
     },
     {
       "id": "admin_3",
@@ -60,8 +237,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin3@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:24.031Z"
+      "email": "admin3@surigaodelsur.ph"
     },
     {
       "id": "admin_4",
@@ -70,8 +246,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin4@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:24.055Z"
+      "email": "admin4@surigaodelsur.ph"
     },
     {
       "id": "admin_5",
@@ -80,8 +255,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin5@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:24.080Z"
+      "email": "admin5@surigaodelsur.ph"
     },
     {
       "id": "admin_6",
@@ -90,8 +264,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin6@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:24.096Z"
+      "email": "admin6@surigaodelsur.ph"
     },
     {
       "id": "admin_7",
@@ -100,8 +273,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin7@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:24.113Z"
+      "email": "admin7@surigaodelsur.ph"
     },
     {
       "id": "admin_8",
@@ -110,8 +282,7 @@
       "role": "admin",
       "mustChangePassword": false,
       "passwordHash": "h_2018166324_7",
-      "email": "admin8@surigaodelsur.ph",
-      "lastLogin": "2026-09-24T10:28:24.130Z"
+      "email": "admin8@surigaodelsur.ph"
     }
   ],
   "products": [],
@@ -166,6 +337,60 @@
   ],
   "notifications": [
     {
+      "id": "notif_1790423545616",
+      "userId": "admin_all",
+      "title": "New Seller Application",
+      "message": "Test Seller Store (Test Seller Owner) from Tandag City submitted a seller application pending your review.",
+      "type": "verification",
+      "read": false,
+      "createdAt": "2026-09-26T11:52:25.616Z"
+    },
+    {
+      "id": "notif_1790423545601",
+      "userId": "admin_all",
+      "title": "New Delivery Rider Registered",
+      "message": "Test Rider (Motorcycle - TEST-5424) registered as a delivery partner in Tandag City.",
+      "type": "verification",
+      "read": false,
+      "createdAt": "2026-09-26T11:52:25.601Z"
+    },
+    {
+      "id": "notif_1790423522134",
+      "userId": "admin_all",
+      "title": "New Seller Application",
+      "message": "Test Seller Store (Test Seller Owner) from Tandag City submitted a seller application pending your review.",
+      "type": "verification",
+      "read": false,
+      "createdAt": "2026-09-26T11:52:02.134Z"
+    },
+    {
+      "id": "notif_1790423522119",
+      "userId": "admin_all",
+      "title": "New Delivery Rider Registered",
+      "message": "Test Rider (Motorcycle - TEST-1935) registered as a delivery partner in Tandag City.",
+      "type": "verification",
+      "read": false,
+      "createdAt": "2026-09-26T11:52:02.119Z"
+    },
+    {
+      "id": "notif_1790245975016",
+      "userId": "user_1790245948591",
+      "title": "Seller Account Approved! 🎉",
+      "message": "Congratulations! You can now start listing products on Surigao del Sur Marketplace.",
+      "type": "verification",
+      "read": false,
+      "createdAt": "2026-09-24T10:32:55.016Z"
+    },
+    {
+      "id": "notif_1790245948592",
+      "userId": "admin_all",
+      "title": "New Seller Application",
+      "message": "PIO-SANG Food Hub (Rey John Piosang) from Madrid submitted a seller application pending your review.",
+      "type": "verification",
+      "read": false,
+      "createdAt": "2026-09-24T10:32:28.592Z"
+    },
+    {
       "id": "notif_1790245706895",
       "userId": "admin_all",
       "title": "New Delivery Rider Registered",
@@ -176,6 +401,146 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "log_1790249690045_uoqq",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin1",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:50.045Z"
+    },
+    {
+      "id": "log_1790249656428_7cmb",
+      "adminId": "admin_5",
+      "adminUsername": "admin5",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin5",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:16.428Z"
+    },
+    {
+      "id": "log_1790249656412_h5oj",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin1",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:16.412Z"
+    },
+    {
+      "id": "log_1790249651391_ko92",
+      "adminId": "admin_8",
+      "adminUsername": "admin8",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin8",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.391Z"
+    },
+    {
+      "id": "log_1790249651386_9re4",
+      "adminId": "admin_7",
+      "adminUsername": "admin7",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin7",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.386Z"
+    },
+    {
+      "id": "log_1790249651380_nbc9",
+      "adminId": "admin_6",
+      "adminUsername": "admin6",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin6",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.380Z"
+    },
+    {
+      "id": "log_1790249651375_g2x6",
+      "adminId": "admin_5",
+      "adminUsername": "admin5",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin5",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.375Z"
+    },
+    {
+      "id": "log_1790249651370_gv4t",
+      "adminId": "admin_4",
+      "adminUsername": "admin4",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin4",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.370Z"
+    },
+    {
+      "id": "log_1790249651365_0g10",
+      "adminId": "admin_3",
+      "adminUsername": "admin3",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin3",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.365Z"
+    },
+    {
+      "id": "log_1790249651360_0dk3",
+      "adminId": "admin_2",
+      "adminUsername": "admin2",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin2",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.360Z"
+    },
+    {
+      "id": "log_1790249651341_x6ex",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin1",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T11:34:11.341Z"
+    },
+    {
+      "id": "log_1790245975016_cnnn",
+      "adminId": "admin",
+      "adminUsername": "admin1",
+      "action": "SELLER_APPROVED",
+      "affectedRecord": "Seller: PIO-SANG Food Hub (seller_1790245948591)",
+      "details": "Approved for provincial marketplace",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:32:55.016Z"
+    },
+    {
+      "id": "log_1790245954395_afa8",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin1",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:32:34.395Z"
+    },
+    {
+      "id": "log_1790245816453_9k43",
+      "adminId": "admin_1",
+      "adminUsername": "admin1",
+      "action": "ADMIN_LOGIN",
+      "affectedRecord": "Admin account: admin1",
+      "details": "Successful login",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T10:30:16.453Z"
+    },
     {
       "id": "log_1790245704130_y3pw",
       "adminId": "admin_8",
